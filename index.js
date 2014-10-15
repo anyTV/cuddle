@@ -18,18 +18,9 @@ var https	= require('https'),
 		this.headers 	= {};
 
 		this.to = function (host, port, path) {
-			if (!port && !path) {
-				if (host.substring(0, 4) !== 'http') {
-					host = 'http://' + host;
-				}
-				host = url.parse(host);
-			}
 			this.path = host.path || path;
 			this.host = host.hostname || host;
-			this.port = host.port || (host.protocol === 'https:' ? 443 : (port || 80));
-			if (host.protocol === 'https:') {
-				this.secure = true;
-			}
+			this.port = host.port;
 			return this;
 		};
 
@@ -86,11 +77,17 @@ var https	= require('https'),
 			this.started = true;
 
 			if (data && this.method === 'GET') {
-				this.path += '?' + this.stringify(data);
+				this.path += '?' + stringify(data);
 			}
-			else if (this.method !== 'GET') {
-				payload = this.stringify(data);
-				this.headers['Content-Type'] = 'application/x-www-form-urlencoded';
+			else {
+				if (!this.headers['Content-Type']) {
+					payload = stringify(data);
+					this.headers['Content-Type'] = 'application/x-www-form-urlencoded';
+					this.headers['Content-Length'] = payload.length;
+				}
+				else {
+					payload = JSON.stringify(data);
+				}
 			}
 
 			if (!this._raw) {
