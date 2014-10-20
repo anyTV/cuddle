@@ -59,6 +59,11 @@ var https	= require('https'),
 			return this;
 		};
 
+		this.set_before_json = function (fn) {
+			this.before_json = fn;
+			return this;
+		};
+
 		this.stringify = function (obj) {
 		    var ret = [],
 		        key;
@@ -78,7 +83,8 @@ var https	= require('https'),
 			this.retries++;
 			if (this.retries > this.max_retry) {
 				logger.log('error', 'Reached max retries');
-				return this.cb({message : 'Reached max retries'}, null, this, this.additional_arguments);
+				this.cb({message : 'Reached max retries'}, null, this, this.additional_arguments);
+				return this;
 			}
 			logger.log('warn', 'Retrying request');
 			return this.send(this.data);
@@ -159,10 +165,9 @@ var https	= require('https'),
 						logger.log('verbose', 'Response', response.statusCode);
 						logger.log('silly', s);
 
-						// s = s.replace(/\\u([\d\w]{4})/gi, function (c) {
-						// 	var temp = eval("'" + c + "'");
-						// 	return temp === c ? '' : temp;
-						// });
+						if (this.before_json) {
+							s = this.before_json(s);
+						}
 
 						try {
 							JSON.parse(s);
@@ -213,74 +218,46 @@ var https	= require('https'),
 			req.end();
 			return this;
 		};
+	},
+
+	attach = function (object) {
+		object.get = {
+			to : function (host, port, path) {
+				return new Request('GET').to(host, port, path);
+			}
+		};
+
+		object.post = {
+			to : function (host, port, path) {
+				return new Request('POST').to(host, port, path);
+			}
+		};
+
+		object.put = {
+			to : function (host, port, path) {
+				return new Request('PUT').to(host, port, path);
+			}
+		};
+
+		object.delete = {
+			to : function (host, port, path) {
+				return new Request('DELETE').to(host, port, path);
+			}
+		};
+
+		object.request = function (method) {
+			this.to = function (host, port, path) {
+				return new Request(method).to(host, port, path);
+			};
+			return this;
+		};
+
+		return object;
 	};
 
 module.exports = function (_logger) {
-	var to_export = {};
-
 	logger = _logger || logger;
-
-	to_export.get = {
-		to : function (host, port, path) {
-			return new Request('GET').to(host, port, path);
-		}
-	};
-
-	to_export.post = {
-		to : function (host, port, path) {
-			return new Request('POST').to(host, port, path);
-		}
-	};
-
-	to_export.put = {
-		to : function (host, port, path) {
-			return new Request('PUT').to(host, port, path);
-		}
-	};
-
-	to_export.delete = {
-		to : function (host, port, path) {
-			return new Request('DELETE').to(host, port, path);
-		}
-	};
-
-	to_export.request = function (method) {
-		this.to = function (host, port, path) {
-			return new Request(method).to(host, port, path);
-		};
-		return this;
-	};
-
-	return to_export;
+	return attach({});
 };
 
-module.exports.get = {
-	to : function (host, port, path) {
-		return new Request('GET').to(host, port, path);
-	}
-};
-
-module.exports.post = {
-	to : function (host, port, path) {
-		return new Request('POST').to(host, port, path);
-	}
-};
-
-module.exports.put = {
-	to : function (host, port, path) {
-		return new Request('PUT').to(host, port, path);
-	}
-};
-
-module.exports.delete = {
-	to : function (host, port, path) {
-		return new Request('DELETE').to(host, port, path);
-	}
-};
-
-module.exports.request = function (method) {
-	this.to = function (host, port, path) {
-		return new Request(method).to(host, port, path);
-	};
-	return this;
-};
+attach(module.exports);
