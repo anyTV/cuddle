@@ -6,9 +6,8 @@
 
 var https	= require('https'),
 	http	= require('http'),
-	url 	= require('url'),
 
-	logger,
+	logger 	= {log:function(){}},
 
 	Request = function (method) {
 		this.method		= method;
@@ -16,11 +15,18 @@ var https	= require('https'),
 		this.started 	= false;
 		this._raw 		= false;
 		this.headers 	= {};
+		this.retries	= 0;
+		this.max_retry	= 3;
 
 		this.to = function (host, port, path) {
-			this.path = host.path || path;
-			this.host = host.hostname || host;
-			this.port = host.port;
+			this.path = path;
+			this.host = host;
+			this.port = port;
+			return this;
+		};
+
+		this.set_max_retry = function (max) {
+			this.max_retry = max;
 			return this;
 		};
 
@@ -68,20 +74,32 @@ var https	= require('https'),
 		    return ret.join('&');
 		};
 
+		this.retry = function () {
+			this.retries++;
+			if (this.retries > this.max_retry) {
+				logger.log('error', 'Reached max retries');
+				return this.cb({message : 'Reached max retries'}, null, this, this.additional_arguments);
+			}
+			logger.log('warn', 'Retrying request');
+			return this.send(this.data);
+		};
+
 		this.send = function (data) {
-			var self = this,
+			var new_path = this.path,
+				self = this,
 				protocol,
 				payload,
 				req;
 
 			this.started = true;
+			this.data = data;
 
 			if (data && this.method === 'GET') {
-				this.path += '?' + stringify(data);
+				new_path += '?' + this.stringify(data);
 			}
 			else {
 				if (!this.headers['Content-Type']) {
-					payload = stringify(data);
+					payload = this.stringify(data);
 					this.headers['Content-Type'] = 'application/x-www-form-urlencoded';
 					this.headers['Content-Length'] = payload.length;
 				}
@@ -94,7 +112,7 @@ var https	= require('https'),
 				this.headers['Accept'] = 'application/json';
 			}
 
-			logger.log('verbose', this.method, this.host + ':' + this.port + this.path);
+			logger.log('verbose', this.method, this.host + ':' + this.port + new_path);
 
 			if (payload) {
 				logger.log('debug', 'data\n', payload);
@@ -107,7 +125,7 @@ var https	= require('https'),
 			req = protocol.request({
 				host: this.host,
 				port: this.port,
-				path: this.path,
+				path: new_path,
 				method: this.method,
 				headers: this.headers
 			}, function (response) {
@@ -121,57 +139,71 @@ var https	= require('https'),
 
 				response.on('end', function () {
 
+					self.response_headers = response.headers;
+
 					if (self._raw) {
 						if (response.statusCode === 200) {
 							logger.log('verbose', 'Response', response.statusCode);
 							logger.log('silly', s);
-							self.cb(null, s, response.headers, self.additional_arguments);
+							self.cb(null, s, self, self.additional_arguments);
 						}
 						else {
 							s = {
 								response : s,
 								statusCode : response.statusCode
 							};
-							self.cb(s, null, response.headers, self.additional_arguments);
+							self.cb(s, null, self, self.additional_arguments);
 						}
 					}
 					else {
 						logger.log('verbose', 'Response', response.statusCode);
 						logger.log('silly', s);
 
-						s = s.replace(/\\u([\d\w]{4})/gi, function (c) {
-							var temp = eval("'" + c + "'");
-							return temp === c ? '' : temp;
-						});
+						// s = s.replace(/\\u([\d\w]{4})/gi, function (c) {
+						// 	var temp = eval("'" + c + "'");
+						// 	return temp === c ? '' : temp;
+						// });
 
 						try {
 							JSON.parse(s);
 						}
 						catch (e) {
 							logger.log('error', 'JSON is invalid');
+							logger.log('error', s);
 							e.statusCode = response.statusCode;
-							return self.cb(e, s, response.headers, self.additional_arguments);
+							return self.cb(e, s, self, self.additional_arguments);
 						}
 						if (response.statusCode === 200) {
-							self.cb(null, JSON.parse(s), response.headers, self.additional_arguments);
+							self.cb(null, JSON.parse(s), self, self.additional_arguments);
 						}
 						else {
 							s = JSON.parse(s);
 							s.statusCode = response.statusCode;
-							self.cb(s, null, response.headers, self.additional_arguments);
+							self.cb(s, null, self, self.additional_arguments);
 						}
 					}
 				});
 			});
 
 			req.on('error', function (err) {
-				logger.log('error', 'Request error', err);
+				var retryable_errors = [
+						'ECONNREFUSED',
+						'ENOTFOUND',
+						'ECONNRESET',
+						'EADDRINFO',
+						'EMFILE'
+					];
 
-                if (err.code === 'ECONNREFUSED') {
+				logger.log('error', 'Request error', err, self.host + ':' + self.port + self.path);
+
+                if (~retryable_errors.indexOf(err.code)) {
+    				if (self.retries < self.max_retry) {
+						return self.retry();
+					}
                     err.message = 'OMG. Server on ' + self.host + ':' + self.port + ' seems dead';
                 }
 
-				self.cb(err, null, null, self.additional_arguments);
+				self.cb(err, null, self, self.additional_arguments);
 			});
 
 			if (this.method !== 'GET') {
@@ -184,38 +216,71 @@ var https	= require('https'),
 	};
 
 module.exports = function (_logger) {
-	logger = _logger || {log:function(){}};
+	var to_export = {};
 
-	this.get = {
+	logger = _logger || logger;
+
+	to_export.get = {
 		to : function (host, port, path) {
 			return new Request('GET').to(host, port, path);
 		}
 	};
 
-	this.post = {
+	to_export.post = {
 		to : function (host, port, path) {
 			return new Request('POST').to(host, port, path);
 		}
 	};
 
-	this.put = {
+	to_export.put = {
 		to : function (host, port, path) {
 			return new Request('PUT').to(host, port, path);
 		}
 	};
 
-	this.delete = {
+	to_export.delete = {
 		to : function (host, port, path) {
 			return new Request('DELETE').to(host, port, path);
 		}
 	};
 
-	this.request = function (method) {
+	to_export.request = function (method) {
 		this.to = function (host, port, path) {
 			return new Request(method).to(host, port, path);
 		};
 		return this;
 	};
 
+	return to_export;
+};
+
+module.exports.get = {
+	to : function (host, port, path) {
+		return new Request('GET').to(host, port, path);
+	}
+};
+
+module.exports.post = {
+	to : function (host, port, path) {
+		return new Request('POST').to(host, port, path);
+	}
+};
+
+module.exports.put = {
+	to : function (host, port, path) {
+		return new Request('PUT').to(host, port, path);
+	}
+};
+
+module.exports.delete = {
+	to : function (host, port, path) {
+		return new Request('DELETE').to(host, port, path);
+	}
+};
+
+module.exports.request = function (method) {
+	this.to = function (host, port, path) {
+		return new Request(method).to(host, port, path);
+	};
 	return this;
 };
