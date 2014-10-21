@@ -128,94 +128,99 @@ var https	= require('https'),
 
 			protocol = this.secure ? https : http;
 
-			req = protocol.request({
-				host: this.host,
-				port: this.port,
-				path: new_path,
-				method: this.method,
-				headers: this.headers
-			}, function (response) {
-				var s = '';
+			try {
+				req = protocol.request({
+					host: this.host,
+					port: this.port,
+					path: new_path,
+					method: this.method,
+					headers: this.headers
+				}, function (response) {
+					var s = '';
 
-				response.setEncoding('utf8');
+					response.setEncoding('utf8');
 
-				response.on('data', function (chunk) {
-					s += chunk;
-				});
+					response.on('data', function (chunk) {
+						s += chunk;
+					});
 
-				response.on('end', function () {
+					response.on('end', function () {
 
-					self.response_headers = response.headers;
+						self.response_headers = response.headers;
 
-					if (self._raw) {
-						if (response.statusCode === 200) {
+						if (self._raw) {
+							if (response.statusCode === 200) {
+								logger.log('verbose', 'Response', response.statusCode);
+								logger.log('silly', s);
+								self.cb(null, s, self, self.additional_arguments);
+							}
+							else {
+								s = {
+									response : s,
+									statusCode : response.statusCode
+								};
+								self.cb(s, null, self, self.additional_arguments);
+							}
+						}
+						else {
 							logger.log('verbose', 'Response', response.statusCode);
 							logger.log('silly', s);
-							self.cb(null, s, self, self.additional_arguments);
-						}
-						else {
-							s = {
-								response : s,
-								statusCode : response.statusCode
-							};
-							self.cb(s, null, self, self.additional_arguments);
-						}
-					}
-					else {
-						logger.log('verbose', 'Response', response.statusCode);
-						logger.log('silly', s);
 
-						if (this.before_json) {
-							s = this.before_json(s);
-						}
+							if (this.before_json) {
+								s = this.before_json(s);
+							}
 
-						try {
-							JSON.parse(s);
+							try {
+								JSON.parse(s);
+							}
+							catch (e) {
+								logger.log('error', 'JSON is invalid');
+								logger.log('error', s);
+								e.statusCode = response.statusCode;
+								return self.cb(e, s, self, self.additional_arguments);
+							}
+							if (response.statusCode === 200) {
+								self.cb(null, JSON.parse(s), self, self.additional_arguments);
+							}
+							else {
+								s = JSON.parse(s);
+								s.statusCode = response.statusCode;
+								self.cb(s, null, self, self.additional_arguments);
+							}
 						}
-						catch (e) {
-							logger.log('error', 'JSON is invalid');
-							logger.log('error', s);
-							e.statusCode = response.statusCode;
-							return self.cb(e, s, self, self.additional_arguments);
-						}
-						if (response.statusCode === 200) {
-							self.cb(null, JSON.parse(s), self, self.additional_arguments);
-						}
-						else {
-							s = JSON.parse(s);
-							s.statusCode = response.statusCode;
-							self.cb(s, null, self, self.additional_arguments);
-						}
-					}
+					});
 				});
-			});
 
-			req.on('error', function (err) {
-				var retryable_errors = [
-						'ECONNREFUSED',
-						'ENOTFOUND',
-						'ECONNRESET',
-						'EADDRINFO',
-						'EMFILE'
-					];
+				req.on('error', function (err) {
+					var retryable_errors = [
+							'ECONNREFUSED',
+							'ENOTFOUND',
+							'ECONNRESET',
+							'EADDRINFO',
+							'EMFILE'
+						];
 
-				logger.log('error', 'Request error', err, self.host + ':' + self.port + self.path);
+					logger.log('error', 'Request error', err, self.host + ':' + self.port + self.path);
 
-                if (~retryable_errors.indexOf(err.code)) {
-    				if (self.retries < self.max_retry) {
-						return self.retry();
-					}
-                    err.message = 'OMG. Server on ' + self.host + ':' + self.port + ' seems dead';
-                }
+	                if (~retryable_errors.indexOf(err.code)) {
+	    				if (self.retries < self.max_retry) {
+							return self.retry();
+						}
+	                    err.message = 'OMG. Server on ' + self.host + ':' + self.port + ' seems dead';
+	                }
 
-				self.cb(err, null, self, self.additional_arguments);
-			});
+					self.cb(err, null, self, self.additional_arguments);
+				});
 
-			if (this.method !== 'GET') {
-				req.write(payload);
+				if (this.method !== 'GET') {
+					req.write(payload);
+				}
+
+				req.end();
+			} catch (e) {
+				console.dir(e);
+				self.retry();
 			}
-
-			req.end();
 			return this;
 		};
 	},
