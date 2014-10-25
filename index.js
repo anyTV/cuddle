@@ -83,7 +83,14 @@ var https	= require('https'),
 			this.retries++;
 			if (this.retries > this.max_retry) {
 				logger.log('error', 'Reached max retries');
-				this.cb({message : 'Reached max retries'}, null, this, this.additional_arguments);
+				this.cb({
+						message : 'Reached max retries',
+						url : this.host + ':' + this.port + this.path
+					},
+					null,
+					this,
+					this.additional_arguments
+				);
 				return this;
 			}
 			logger.log('warn', 'Retrying request');

@@ -47,7 +47,7 @@ request.set_before_json(fn) | function | itself | Accepts a function to execute 
 request.raw() | none | itself | Disable automatic JSON parsing, removes default `application/json` on `Accept` header
 request.secured() | none | itself | Will use https, but be sure to pass 443 as the port
 request.send({data}) | data | itself | Sets the payload
-request.set_max_rety(5) | number | itself | Sets the max retry, default is 3
+request.set_max_retry(5) | number | itself | Sets the max retry, default is 3
 request.retry() | none | itself | Retries the request
 request.then(fn) | function | itself | Sets the callback then executes request. Callback arguments are `err` non-200 status codes will be considered as an error, `result` response data, `request` the request it self so you can call retry if you want and the request will have a `response_headers` property if you need it, lastly `args` if you used `.args`
 
