@@ -54,7 +54,7 @@ var https	= require('https'),
 			return this;
 		};
 
-		this.args = function () {
+		this.args = function (arguments) {
 			this.additional_arguments = arguments;
 			return this;
 		};
