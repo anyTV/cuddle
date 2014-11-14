@@ -18,7 +18,7 @@ var https	= require('https'),
 		this.retries	= 0;
 		this.max_retry	= 3;
 
-		this.stringify = function () {
+		this.toString = function () {
 			return [
 				this.method,
 				' ' ,
