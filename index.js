@@ -18,6 +18,24 @@ var https	= require('https'),
 		this.retries	= 0;
 		this.max_retry	= 3;
 
+		this.stringify = function () {
+			return [
+				this.method,
+				' ' ,
+				'http',
+				this.secured ? 's' : '',
+				'://',
+				this.host,
+				':',
+				this.port,
+				this.path,
+				'\n',
+				this.data,
+				'\n',
+				this.headers
+			].join('');
+		};
+
 		this.to = function (host, port, path) {
 			this.path = path;
 			this.host = host;
