@@ -9,6 +9,21 @@ var https	= require('https'),
 
 	logger 	= {log:function(){}},
 
+	stringify = function (obj) {
+	    var ret = [],
+	        key;
+
+	    for (key in obj) {
+	        ret.push(
+	            obj[key] === null
+	            ? encodeURIComponent(key)
+	            : encodeURIComponent(key) + '=' + encodeURIComponent(obj[key])
+	        );
+	    }
+
+	    return ret.join('&');
+	},
+
 	Request = function (method) {
 		this.method		= method;
 		this.secure 	= false;
@@ -18,7 +33,7 @@ var https	= require('https'),
 		this.retries	= 0;
 		this.max_retry	= 3;
 
-		this.toString = function () {
+		this.to_string = function () {
 			return [
 				this.method,
 				' ' ,
@@ -29,10 +44,10 @@ var https	= require('https'),
 				':',
 				this.port,
 				this.path,
-				'\n',
-				this.data,
-				'\n',
-				this.headers
+				'\nPayload:\t',
+				JSON.stringify(this.data),
+				'\nHeaders:\t',
+				JSON.stringify(this.headers)
 			].join('');
 		};
 
@@ -82,20 +97,7 @@ var https	= require('https'),
 			return this;
 		};
 
-		this.stringify = function (obj) {
-		    var ret = [],
-		        key;
-
-		    for (key in obj) {
-		        ret.push(
-		            obj[key] === null
-		            ? encodeURIComponent(key)
-		            : encodeURIComponent(key) + '=' + encodeURIComponent(obj[key])
-		        );
-		    }
-
-		    return ret.join('&');
-		};
+		this.stringify = stringify;
 
 		this.retry = function () {
 			this.retries++;
@@ -160,13 +162,25 @@ var https	= require('https'),
 					path: new_path,
 					method: this.method,
 					headers: this.headers
-				}, function (response) {
+				});
+
+				req.on('response', function (response) {
 					var s = '';
 
 					response.setEncoding('utf8');
 
 					response.on('data', function (chunk) {
 						s += chunk;
+					});
+
+					response.on('close', function () {
+						loggere.log('error', 'request closed');
+						self.retry();
+					});
+
+					response.on('error', function (err) {
+						logger.log('error', 'Response error', err);
+						self.retry();
 					});
 
 					response.on('end', function () {
@@ -237,13 +251,28 @@ var https	= require('https'),
 					self.cb(err, null, self, self.additional_arguments);
 				});
 
+				req.on('continue', function () {
+					logger.log('error', 'continue event emitted');
+					self.retry();
+				});
+
+				req.on('upgrade', function (response, socket, head) {
+					logger.log('error', 'upgrade event emitted');
+					self.retry();
+				});
+
+				req.on('connect', function (response, socket, head) {
+					logger.log('error', 'connect event emitted');
+					self.retry();
+				});
+
 				if (this.method !== 'GET') {
 					req.write(payload);
 				}
 
 				req.end();
 			} catch (e) {
-				console.dir(e);
+				logger.log('error', e);
 				self.retry();
 			}
 			return this;
@@ -281,6 +310,8 @@ var https	= require('https'),
 			};
 			return this;
 		};
+
+		object.stringify = stringify;
 
 		return object;
 	};
