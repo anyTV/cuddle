@@ -28,6 +28,7 @@ var https	= require('https'),
 		this.method		= method;
 		this.secure 	= false;
 		this.started 	= false;
+		this.follow 	= false;
 		this._raw 		= false;
 		this.headers 	= {};
 		this.retries	= 0;
@@ -94,6 +95,12 @@ var https	= require('https'),
 
 		this.set_before_json = function (fn) {
 			this.before_json = fn;
+			return this;
+		};
+
+		this.follow_redirects = function (max_redirects) {
+			this.max_redirects = +max_redirects || 3;
+			this.follow = true;
 			return this;
 		};
 
@@ -184,10 +191,37 @@ var https	= require('https'),
 					});
 
 					response.on('end', function () {
+						var redir,
+							temp;
 
 						self.response_headers = response.headers;
 
-						if (self._raw) {
+						if (self.follow && self.response_headers.location) {
+							if (!self.max_redirects) {
+								self.cb({message : 'Too many redirects'}, s, self, self.additional_arguments);
+								return;
+							}
+
+							temp = self.response_headers.location.split('/');
+
+							redir = new Request('GET')
+								.to(temp[2], temp[0] === 'http:' ? 80 : 443, temp.splice(2, -1).join('/') || '/')
+								.follow_redirects(self.max_redirects - 1)
+								.raw();
+
+							if (temp[0] === 'https:') {
+								redir = redir.secured();
+							}
+
+							for (temp in self.headers) {
+								redir = redir.add_header(temp, self.headers[temp]);
+							}
+
+							redir.then(self.cb);
+
+							return;
+						}
+						else if (self._raw) {
 							if (response.statusCode === 200) {
 								logger.log('verbose', 'Response', response.statusCode);
 								logger.log('silly', s);

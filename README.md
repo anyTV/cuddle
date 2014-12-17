@@ -46,6 +46,7 @@ request.args('arg1', [arg2], {arg3}, arg4) | any number of arguments | itself | 
 request.set_before_json(fn) | function | itself | Accepts a function to execute before parsing the data to JSON
 request.raw() | none | itself | Disable automatic JSON parsing, removes default `application/json` on `Accept` header
 request.secured() | none | itself | Will use https, but be sure to pass 443 as the port
+request.follow_redirects(5) | number | itself | Follow redirects up to passed max redirects, default is 3
 request.send({data}) | data | itself | Sets the payload
 request.set_max_retry(5) | number | itself | Sets the max retry, default is 3
 request.retry() | none | itself | Retries the request
