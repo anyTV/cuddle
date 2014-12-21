@@ -218,8 +218,6 @@ var https	= require('https'),
 							}
 
 							redir.then(self.cb);
-
-							return;
 						}
 						else if (self._raw) {
 							if (response.statusCode === 200) {
@@ -239,8 +237,8 @@ var https	= require('https'),
 							logger.log('verbose', 'Response', response.statusCode);
 							logger.log('silly', s);
 
-							if (this.before_json) {
-								s = this.before_json(s);
+							if (self.before_json) {
+								s = self.before_json(s);
 							}
 
 							try {
