@@ -246,6 +246,7 @@ var https	= require('https'),
 							}
 							catch (e) {
 								logger.log('error', 'JSON is invalid');
+								logger.log('error', e);
 								logger.log('error', s);
 								e.error = e;
 								e.statusCode = response.statusCode;
