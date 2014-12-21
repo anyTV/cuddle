@@ -268,6 +268,7 @@ var https	= require('https'),
 							'ENOTFOUND',
 							'ECONNRESET',
 							'EADDRINFO',
+							'ETIMEDOUT',
 							'EMFILE'
 						];
 
