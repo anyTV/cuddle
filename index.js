@@ -271,6 +271,7 @@ var https	= require('https'),
 							'ECONNRESET',
 							'EADDRINFO',
 							'ETIMEDOUT',
+							'ESRCH',
 							'EMFILE'
 						];
 
