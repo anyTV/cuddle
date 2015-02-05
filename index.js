@@ -1,3 +1,5 @@
+'use strict';
+
 /**
 	Cuddle.js
 
@@ -9,26 +11,10 @@ var https	= require('https'),
 
 	logger 	= {log:function(){}},
 
-	stringify = function (obj) {
-	    var ret = [],
-	        key;
-
-	    for (key in obj) {
-	        ret.push(
-	            obj[key] === null
-	            ? encodeURIComponent(key)
-	            : encodeURIComponent(key) + '=' + encodeURIComponent(obj[key])
-	        );
-	    }
-
-	    return ret.join('&');
-	},
-
 	Request = function (method) {
 		this.method		= method;
 		this.secure 	= false;
 		this.started 	= false;
-		this.follow 	= false;
 		this._raw 		= false;
 		this.headers 	= {};
 		this.retries	= 0;
@@ -84,7 +70,9 @@ var https	= require('https'),
 				this.cb = cb;
 			}
 
-			!this.started && this.send();
+			if (!this.started) {
+				this.send();
+			}
 			return this;
 		};
 
@@ -98,13 +86,20 @@ var https	= require('https'),
 			return this;
 		};
 
-		this.follow_redirects = function (max_redirects) {
-			this.max_redirects = +max_redirects || 3;
-			this.follow = true;
-			return this;
-		};
+		this.stringify = function (obj) {
+		    var ret = [],
+		        key;
 
-		this.stringify = stringify;
+		    for (key in obj) {
+		        ret.push(
+		            obj[key] === null
+		            ? encodeURIComponent(key)
+		            : encodeURIComponent(key) + '=' + encodeURIComponent(obj[key])
+		        );
+		    }
+
+		    return ret.join('&');
+		};
 
 		this.retry = function () {
 			this.retries++;
@@ -149,7 +144,7 @@ var https	= require('https'),
 			}
 
 			if (!this._raw) {
-				this.headers['Accept'] = 'application/json';
+				this.headers.Accept = 'application/json';
 			}
 
 			logger.log('verbose', this.method, this.host + ':' + this.port + new_path);
@@ -181,7 +176,7 @@ var https	= require('https'),
 					});
 
 					response.on('close', function () {
-						loggere.log('error', 'request closed');
+						logger.log('error', 'request closed');
 						self.retry();
 					});
 
@@ -191,35 +186,10 @@ var https	= require('https'),
 					});
 
 					response.on('end', function () {
-						var redir,
-							temp;
 
 						self.response_headers = response.headers;
 
-						if (self.follow && self.response_headers.location) {
-							if (!self.max_redirects) {
-								self.cb({message : 'Too many redirects'}, s, self, self.additional_arguments);
-								return;
-							}
-
-							temp = self.response_headers.location.split('/');
-
-							redir = new Request('GET')
-								.to(temp[2], temp[0] === 'http:' ? 80 : 443, temp.splice(2, -1).join('/') || '/')
-								.follow_redirects(self.max_redirects - 1)
-								.raw();
-
-							if (temp[0] === 'https:') {
-								redir = redir.secured();
-							}
-
-							for (temp in self.headers) {
-								redir = redir.add_header(temp, self.headers[temp]);
-							}
-
-							redir.then(self.cb);
-						}
-						else if (self._raw) {
+						if (self._raw) {
 							if (response.statusCode === 200) {
 								logger.log('verbose', 'Response', response.statusCode);
 								logger.log('silly', s);
@@ -237,8 +207,8 @@ var https	= require('https'),
 							logger.log('verbose', 'Response', response.statusCode);
 							logger.log('silly', s);
 
-							if (self.before_json) {
-								s = self.before_json(s);
+							if (this.before_json) {
+								s = this.before_json(s);
 							}
 
 							try {
@@ -246,9 +216,7 @@ var https	= require('https'),
 							}
 							catch (e) {
 								logger.log('error', 'JSON is invalid');
-								logger.log('error', e);
 								logger.log('error', s);
-								e.error = e;
 								e.statusCode = response.statusCode;
 								return self.cb(e, s, self, self.additional_arguments);
 							}
@@ -270,8 +238,6 @@ var https	= require('https'),
 							'ENOTFOUND',
 							'ECONNRESET',
 							'EADDRINFO',
-							'ETIMEDOUT',
-							'ESRCH',
 							'EMFILE'
 						];
 
@@ -292,12 +258,12 @@ var https	= require('https'),
 					self.retry();
 				});
 
-				req.on('upgrade', function (response, socket, head) {
+				req.on('upgrade', function () {
 					logger.log('error', 'upgrade event emitted');
 					self.retry();
 				});
 
-				req.on('connect', function (response, socket, head) {
+				req.on('connect', function () {
 					logger.log('error', 'connect event emitted');
 					self.retry();
 				});
@@ -346,8 +312,6 @@ var https	= require('https'),
 			};
 			return this;
 		};
-
-		object.stringify = stringify;
 
 		return object;
 	};
