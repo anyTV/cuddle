@@ -1,324 +1,364 @@
 'use strict';
 
 /**
-	Cuddle.js
+    Cuddle.js
 
-	@author	Raven Lagrimas
+    @author Raven Lagrimas
 */
 
-var https	= require('https'),
-	http	= require('http'),
+var https   = require('https'),
+    http    = require('http'),
 
-	logger 	= {log:function(){}},
+    logger  = {log:function(){}},
 
-	Request = function (method) {
-		this.method		= method;
-		this.secure 	= false;
-		this.started 	= false;
-		this._raw 		= false;
-		this.headers 	= {};
-		this.retries	= 0;
-		this.max_retry	= 3;
+    stringify = function (obj) {
+        var ret = [],
+            key;
 
-		this.to_string = function () {
-			return [
-				this.method,
-				' ' ,
-				'http',
-				this.secured ? 's' : '',
-				'://',
-				this.host,
-				':',
-				this.port,
-				this.path,
-				'\nPayload:\t',
-				JSON.stringify(this.data),
-				'\nHeaders:\t',
-				JSON.stringify(this.headers)
-			].join('');
-		};
+        for (key in obj) {
+            ret.push(
+                obj[key] === null
+                ? encodeURIComponent(key)
+                : encodeURIComponent(key) + '=' + encodeURIComponent(obj[key])
+            );
+        }
 
-		this.to = function (host, port, path) {
-			this.path = path;
-			this.host = host;
-			this.port = port;
-			return this;
-		};
+        return ret.join('&');
+    },
 
-		this.set_max_retry = function (max) {
-			this.max_retry = max;
-			return this;
-		};
+    Request = function (method) {
+        this.method     = method;
+        this.secure     = false;
+        this.started    = false;
+        this.follow     = false;
+        this._raw       = false;
+        this.headers    = {};
+        this.retries    = 0;
+        this.max_retry  = 3;
 
-		this.secured = function () {
-			this.secure = true;
-			return this;
-		};
+        this.to_string = function () {
+            return [
+                this.method,
+                ' ' ,
+                'http',
+                this.secured ? 's' : '',
+                '://',
+                this.host,
+                ':',
+                this.port,
+                this.path,
+                '\nPayload:\t',
+                JSON.stringify(this.data),
+                '\nHeaders:\t',
+                JSON.stringify(this.headers)
+            ].join('');
+        };
 
-		this.add_header = function (key, value) {
-			this.headers[key] = value;
-			return this;
-		};
+        this.to = function (host, port, path) {
+            this.path = path;
+            this.host = host;
+            this.port = port;
+            return this;
+        };
 
-		this.raw = function () {
-			this._raw = true;
-			return this;
-		};
+        this.set_max_retry = function (max) {
+            this.max_retry = max;
+            return this;
+        };
 
-		this.then = function (cb) {
-			if (!this.cb) {
-				this.cb = cb;
-			}
+        this.secured = function () {
+            this.secure = true;
+            return this;
+        };
 
-			if (!this.started) {
-				this.send();
-			}
-			return this;
-		};
+        this.add_header = function (key, value) {
+            this.headers[key] = value;
+            return this;
+        };
 
-		this.args = function () {
-			this.additional_arguments = arguments;
-			return this;
-		};
+        this.raw = function () {
+            this._raw = true;
+            return this;
+        };
 
-		this.set_before_json = function (fn) {
-			this.before_json = fn;
-			return this;
-		};
+        this.then = function (cb) {
+            if (!this.cb) {
+                this.cb = cb;
+            }
 
-		this.stringify = function (obj) {
-		    var ret = [],
-		        key;
+            if (!this.started) {
+            	this.send();
+            }
+            return this;
+        };
 
-		    for (key in obj) {
-		        ret.push(
-		            obj[key] === null
-		            ? encodeURIComponent(key)
-		            : encodeURIComponent(key) + '=' + encodeURIComponent(obj[key])
-		        );
-		    }
+        this.args = function () {
+            this.additional_arguments = arguments;
+            return this;
+        };
 
-		    return ret.join('&');
-		};
+        this.set_before_json = function (fn) {
+            this.before_json = fn;
+            return this;
+        };
 
-		this.retry = function () {
-			this.retries++;
-			if (this.retries > this.max_retry) {
-				logger.log('error', 'Reached max retries');
-				this.cb({
-						message : 'Reached max retries',
-						url : this.host + ':' + this.port + this.path
-					},
-					null,
-					this,
-					this.additional_arguments
-				);
-				return this;
-			}
-			logger.log('warn', 'Retrying request');
-			return this.send(this.data);
-		};
+        this.follow_redirects = function (max_redirects) {
+            this.max_redirects = +max_redirects || 3;
+            this.follow = true;
+            return this;
+        };
 
-		this.send = function (data) {
-			var new_path = this.path,
-				self = this,
-				protocol,
-				payload,
-				req;
+        this.stringify = stringify;
 
-			this.started = true;
-			this.data = data;
+        this.retry = function () {
+            this.retries++;
+            if (this.retries > this.max_retry) {
+                logger.log('error', 'Reached max retries');
+                this.cb({
+                        message : 'Reached max retries',
+                        url : this.host + ':' + this.port + this.path
+                    },
+                    null,
+                    this,
+                    this.additional_arguments
+                );
+                return this;
+            }
+            logger.log('warn', 'Retrying request');
+            return this.send(this.data);
+        };
 
-			if (data && this.method === 'GET') {
-				new_path += '?' + this.stringify(data);
-			}
-			else {
-				if (!this.headers['Content-Type']) {
-					payload = this.stringify(data);
-					this.headers['Content-Type'] = 'application/x-www-form-urlencoded';
-					this.headers['Content-Length'] = payload.length;
-				}
-				else {
-					payload = JSON.stringify(data);
-				}
-			}
+        this.send = function (data) {
+            var new_path = this.path,
+                self = this,
+                protocol,
+                payload,
+                req;
 
-			if (!this._raw) {
-				this.headers.Accept = 'application/json';
-			}
+            this.started = true;
+            this.data = data;
 
-			logger.log('verbose', this.method, this.host + ':' + this.port + new_path);
+            if (data && this.method === 'GET') {
+                new_path += '?' + this.stringify(data);
+            }
+            else {
+                if (!this.headers['Content-Type']) {
+                    payload = this.stringify(data);
+                    this.headers['Content-Type'] = 'application/x-www-form-urlencoded';
+                    this.headers['Content-Length'] = payload.length;
+                }
+                else {
+                    payload = JSON.stringify(data);
+                }
+            }
 
-			if (payload) {
-				logger.log('debug', 'data\n', payload);
-			}
+            if (!this._raw) {
+                this.headers.Accept = 'application/json';
+            }
 
-			logger.log('debug', 'headers\n', this.headers);
+            logger.log('verbose', this.method, this.host + ':' + this.port + new_path);
 
-			protocol = this.secure ? https : http;
+            if (payload) {
+                logger.log('debug', 'data\n', payload);
+            }
 
-			try {
-				req = protocol.request({
-					host: this.host,
-					port: this.port,
-					path: new_path,
-					method: this.method,
-					headers: this.headers
-				});
+            logger.log('debug', 'headers\n', this.headers);
 
-				req.on('response', function (response) {
-					var s = '';
+            protocol = this.secure ? https : http;
 
-					response.setEncoding('utf8');
+            try {
+                req = protocol.request({
+                    host: this.host,
+                    port: this.port,
+                    path: new_path,
+                    method: this.method,
+                    headers: this.headers
+                });
 
-					response.on('data', function (chunk) {
-						s += chunk;
-					});
+                req.on('response', function (response) {
+                    var s = '';
 
-					response.on('close', function () {
-						logger.log('error', 'request closed');
-						self.retry();
-					});
+                    response.setEncoding('utf8');
 
-					response.on('error', function (err) {
-						logger.log('error', 'Response error', err);
-						self.retry();
-					});
+                    response.on('data', function (chunk) {
+                        s += chunk;
+                    });
 
-					response.on('end', function () {
+                    response.on('close', function () {
+                        logger.log('error', 'request closed');
+                        self.retry();
+                    });
 
-						self.response_headers = response.headers;
+                    response.on('error', function (err) {
+                        logger.log('error', 'Response error', err);
+                        self.retry();
+                    });
 
-						if (self._raw) {
-							if (response.statusCode === 200) {
-								logger.log('verbose', 'Response', response.statusCode);
-								logger.log('silly', s);
-								self.cb(null, s, self, self.additional_arguments);
-							}
-							else {
-								s = {
-									response : s,
-									statusCode : response.statusCode
-								};
-								self.cb(s, null, self, self.additional_arguments);
-							}
-						}
-						else {
-							logger.log('verbose', 'Response', response.statusCode);
-							logger.log('silly', s);
+                    response.on('end', function () {
+                        var redir,
+                            temp;
 
-							if (this.before_json) {
-								s = this.before_json(s);
-							}
+                        self.response_headers = response.headers;
 
-							try {
-								JSON.parse(s);
-							}
-							catch (e) {
-								logger.log('error', 'JSON is invalid');
-								logger.log('error', s);
-								e.statusCode = response.statusCode;
-								return self.cb(e, s, self, self.additional_arguments);
-							}
-							if (response.statusCode === 200) {
-								self.cb(null, JSON.parse(s), self, self.additional_arguments);
-							}
-							else {
-								s = JSON.parse(s);
-								s.statusCode = response.statusCode;
-								self.cb(s, null, self, self.additional_arguments);
-							}
-						}
-					});
-				});
+                        if (self.follow && self.response_headers.location) {
+                            if (!self.max_redirects) {
+                                self.cb({message : 'Too many redirects'}, s, self, self.additional_arguments);
+                                return;
+                            }
 
-				req.on('error', function (err) {
-					var retryable_errors = [
-							'ECONNREFUSED',
-							'ENOTFOUND',
-							'ECONNRESET',
-							'EADDRINFO',
-							'EMFILE'
-						];
+                            temp = self.response_headers.location.split('/');
 
-					logger.log('error', 'Request error', err, self.host + ':' + self.port + self.path);
+                            redir = new Request('GET')
+                                .to(temp[2], temp[0] === 'http:' ? 80 : 443, temp.splice(2, -1).join('/') || '/')
+                                .follow_redirects(self.max_redirects - 1)
+                                .raw();
 
-	                if (~retryable_errors.indexOf(err.code)) {
-	    				if (self.retries < self.max_retry) {
-							return self.retry();
-						}
-	                    err.message = 'OMG. Server on ' + self.host + ':' + self.port + ' seems dead';
-	                }
+                            if (temp[0] === 'https:') {
+                                redir = redir.secured();
+                            }
 
-					self.cb(err, null, self, self.additional_arguments);
-				});
+                            for (temp in self.headers) {
+                                redir = redir.add_header(temp, self.headers[temp]);
+                            }
 
-				req.on('continue', function () {
-					logger.log('error', 'continue event emitted');
-					self.retry();
-				});
+                            redir.then(self.cb);
+                        }
+                        else if (self._raw) {
+                            if (response.statusCode === 200) {
+                                logger.log('verbose', 'Response', response.statusCode);
+                                logger.log('silly', s);
+                                self.cb(null, s, self, self.additional_arguments);
+                            }
+                            else {
+                                s = {
+                                    response : s,
+                                    statusCode : response.statusCode
+                                };
+                                self.cb(s, null, self, self.additional_arguments);
+                            }
+                        }
+                        else {
+                            logger.log('verbose', 'Response', response.statusCode);
+                            logger.log('silly', s);
 
-				req.on('upgrade', function () {
-					logger.log('error', 'upgrade event emitted');
-					self.retry();
-				});
+                            if (self.before_json) {
+                                s = self.before_json(s);
+                            }
 
-				req.on('connect', function () {
-					logger.log('error', 'connect event emitted');
-					self.retry();
-				});
+                            try {
+                                JSON.parse(s);
+                            }
+                            catch (e) {
+                                logger.log('error', 'JSON is invalid');
+                                logger.log('error', e);
+                                logger.log('error', s);
+                                e.error = e;
+                                e.statusCode = response.statusCode;
+                                return self.cb(e, s, self, self.additional_arguments);
+                            }
+                            if (response.statusCode === 200) {
+                                self.cb(null, JSON.parse(s), self, self.additional_arguments);
+                            }
+                            else {
+                                s = JSON.parse(s);
+                                s.statusCode = response.statusCode;
+                                self.cb(s, null, self, self.additional_arguments);
+                            }
+                        }
+                    });
+                });
 
-				if (this.method !== 'GET') {
-					req.write(payload);
-				}
+                req.on('error', function (err) {
+                    var retryable_errors = [
+                            'ECONNREFUSED',
+                            'ENOTFOUND',
+                            'ECONNRESET',
+                            'EADDRINFO',
+                            'ETIMEDOUT',
+                            'ESRCH',
+                            'EMFILE'
+                        ];
 
-				req.end();
-			} catch (e) {
-				logger.log('error', e);
-				self.retry();
-			}
-			return this;
-		};
-	},
+                    logger.log('error', 'Request error', err, self.host + ':' + self.port + self.path);
 
-	attach = function (object) {
-		object.get = {
-			to : function (host, port, path) {
-				return new Request('GET').to(host, port, path);
-			}
-		};
+                    if (~retryable_errors.indexOf(err.code)) {
+                        if (self.retries < self.max_retry) {
+                            return self.retry();
+                        }
+                        err.message = 'OMG. Server on ' + self.host + ':' + self.port + ' seems dead';
+                    }
 
-		object.post = {
-			to : function (host, port, path) {
-				return new Request('POST').to(host, port, path);
-			}
-		};
+                    self.cb(err, null, self, self.additional_arguments);
+                });
 
-		object.put = {
-			to : function (host, port, path) {
-				return new Request('PUT').to(host, port, path);
-			}
-		};
+                req.on('continue', function () {
+                    logger.log('error', 'continue event emitted');
+                    self.retry();
+                });
 
-		object.delete = {
-			to : function (host, port, path) {
-				return new Request('DELETE').to(host, port, path);
-			}
-		};
+                req.on('upgrade', function () {
+                    logger.log('error', 'upgrade event emitted');
+                    self.retry();
+                });
 
-		object.request = function (method) {
-			this.to = function (host, port, path) {
-				return new Request(method).to(host, port, path);
-			};
-			return this;
-		};
+                req.on('connect', function () {
+                    logger.log('error', 'connect event emitted');
+                    self.retry();
+                });
 
-		return object;
-	};
+                if (this.method !== 'GET') {
+                    req.write(payload);
+                }
+
+                req.end();
+            } catch (e) {
+                logger.log('error', e);
+                self.retry();
+            }
+            return this;
+        };
+    },
+
+    attach = function (object) {
+        object.get = {
+            to : function (host, port, path) {
+                return new Request('GET').to(host, port, path);
+            }
+        };
+
+        object.post = {
+            to : function (host, port, path) {
+                return new Request('POST').to(host, port, path);
+            }
+        };
+
+        object.put = {
+            to : function (host, port, path) {
+                return new Request('PUT').to(host, port, path);
+            }
+        };
+
+        object.delete = {
+            to : function (host, port, path) {
+                return new Request('DELETE').to(host, port, path);
+            }
+        };
+
+        object.request = function (method) {
+            this.to = function (host, port, path) {
+                return new Request(method).to(host, port, path);
+            };
+            return this;
+        };
+
+        object.stringify = stringify;
+
+        return object;
+    };
 
 module.exports = function (_logger) {
-	logger = _logger || logger;
-	return attach({});
+    logger = _logger || logger;
+    return attach({});
 };
 
 attach(module.exports);
