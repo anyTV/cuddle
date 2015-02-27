@@ -232,7 +232,7 @@ var https   = require('https'),
                             else {
                                 s = {
                                     response : s,
-                                    statusCode : response.statusCode
+                                    status_code : response.statusCode
                                 };
                                 self.cb(s, null, self, self.additional_arguments);
                             }
@@ -245,24 +245,26 @@ var https   = require('https'),
                                 s = self.before_json(s);
                             }
 
-                            try {
-                                JSON.parse(s);
+                            if (response.headers['content-type'] === 'application/json') {
+	                            try {
+	                                s = JSON.parse(s);
+	                            }
+	                            catch (e) {
+	                                logger.log('error', 'JSON is invalid');
+	                                logger.log('error', e);
+	                                e.statusCode = response.statusCode;
+	                                return self.cb(e, s, self, self.additional_arguments);
+                            	}
                             }
-                            catch (e) {
-                                logger.log('error', 'JSON is invalid');
-                                logger.log('error', e);
-                                logger.log('error', s);
-                                e.error = e;
-                                e.statusCode = response.statusCode;
-                                return self.cb(e, s, self, self.additional_arguments);
-                            }
+
                             if (response.statusCode === 200) {
-                                self.cb(null, JSON.parse(s), self, self.additional_arguments);
+                                self.cb(null, s, self, self.additional_arguments);
                             }
                             else {
-                                s = JSON.parse(s);
-                                s.statusCode = response.statusCode;
-                                self.cb(s, null, self, self.additional_arguments);
+                                self.cb({
+                                	response : s,
+                                	status_code : response.statusCode
+                                }, null, self, self.additional_arguments);
                             }
                         }
                     });
@@ -271,12 +273,11 @@ var https   = require('https'),
                 req.on('error', function (err) {
                     var retryable_errors = [
                             'ECONNREFUSED',
-                            'ENOTFOUND',
                             'ECONNRESET',
+                            'ENOTFOUND',
                             'EADDRINFO',
                             'ETIMEDOUT',
-                            'ESRCH',
-                            'EMFILE'
+                            'ESRCH'
                         ];
 
                     logger.log('error', 'Request error', err, self.host + ':' + self.port + self.path);
