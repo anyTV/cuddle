@@ -25,7 +25,7 @@ Features
 1. Chainable
 2. Very readable
 3. Helps closures by using `.args()`
-4. Auto-retry for errors like `ECONNREFUSED`, `ENOTFOUND`, `ECONNRESET`,  `EADDRINFO`, `EMFILE`
+4. Auto-retry for errors like `ECONNREFUSED`, `ENOTFOUND`, `ECONNRESET`,  `EADDRINFO`, `ESRCH`
 
 
 Functions
