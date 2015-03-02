@@ -13,7 +13,7 @@ Sample
     var request = require('cuddle');
 
     request.get
-          .to('www.restserver.com', 3000, '/user/1')
+          .to('www.restserver.com:3000/user/1')
           .then(callback);
 
 
