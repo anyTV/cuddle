@@ -8,8 +8,9 @@
 
 var https   = require('https'),
     http    = require('http'),
+    url     = require('url'),
 
-    logger  = {log:function(){}},
+    logger  = {log : function () {}},
 
     stringify = function (obj) {
         var ret = [],
@@ -31,7 +32,6 @@ var https   = require('https'),
         this.secure     = false;
         this.started    = false;
         this.follow     = false;
-        this._raw       = false;
         this.headers    = {};
         this.retries    = 0;
         this.max_retry  = 3;
@@ -54,10 +54,30 @@ var https   = require('https'),
             ].join('');
         };
 
+        this.raw = function () {
+            console.log('\tcudl.raw() is deprecated');
+            return this;
+        };
+
         this.to = function (host, port, path) {
-            this.path = path;
-            this.host = host;
-            this.port = port;
+            host = url.parse(host);
+
+            if (!port && !path) {
+                this.host = host.hostname;
+                this.path = host.path;
+                this.port = host.port ? host.port : 80;
+
+                if (host.protocol === 'https:') {
+                    this.port = 443;
+                    this.secure = true;
+                }
+            }
+            else {
+                this.path = path;
+                this.host = host;
+                this.port = port;
+            }
+
             return this;
         };
 
@@ -76,18 +96,13 @@ var https   = require('https'),
             return this;
         };
 
-        this.raw = function () {
-            this._raw = true;
-            return this;
-        };
-
         this.then = function (cb) {
             if (!this.cb) {
                 this.cb = cb;
             }
 
             if (!this.started) {
-            	this.send();
+                this.send();
             }
             return this;
         };
@@ -152,9 +167,7 @@ var https   = require('https'),
                 }
             }
 
-            if (!this._raw) {
-                this.headers.Accept = 'application/json';
-            }
+            this.headers.Accept = 'application/json';
 
             logger.log('verbose', this.method, this.host + ':' + this.port + new_path);
 
@@ -210,8 +223,7 @@ var https   = require('https'),
 
                             redir = new Request('GET')
                                 .to(temp[2], temp[0] === 'http:' ? 80 : 443, temp.splice(2, -1).join('/') || '/')
-                                .follow_redirects(self.max_redirects - 1)
-                                .raw();
+                                .follow_redirects(self.max_redirects - 1);
 
                             if (temp[0] === 'https:') {
                                 redir = redir.secured();
@@ -223,38 +235,23 @@ var https   = require('https'),
 
                             redir.then(self.cb);
                         }
-                        else if (self._raw) {
-                            if (response.statusCode === 200) {
-                                logger.log('verbose', 'Response', response.statusCode);
-                                logger.log('silly', s);
-                                self.cb(null, s, self, self.additional_arguments);
-                            }
-                            else {
-                                s = {
-                                    response : s,
-                                    status_code : response.statusCode
-                                };
-                                self.cb(s, null, self, self.additional_arguments);
-                            }
-                        }
                         else {
                             logger.log('verbose', 'Response', response.statusCode);
                             logger.log('silly', s);
 
-                            if (self.before_json) {
-                                s = self.before_json(s);
-                            }
-
                             if (response.headers['content-type'] === 'application/json') {
-	                            try {
-	                                s = JSON.parse(s);
-	                            }
-	                            catch (e) {
-	                                logger.log('error', 'JSON is invalid');
-	                                logger.log('error', e);
-	                                e.statusCode = response.statusCode;
-	                                return self.cb(e, s, self, self.additional_arguments);
-                            	}
+                                if (self.before_json) {
+                                    s = self.before_json(s);
+                                }
+                                try {
+                                    s = JSON.parse(s);
+                                }
+                                catch (e) {
+                                    logger.log('error', 'JSON is invalid');
+                                    logger.log('error', e);
+                                    e.statusCode = response.statusCode;
+                                    return self.cb(e, s, self, self.additional_arguments);
+                                }
                             }
 
                             if (response.statusCode === 200) {
@@ -262,8 +259,8 @@ var https   = require('https'),
                             }
                             else {
                                 self.cb({
-                                	response : s,
-                                	status_code : response.statusCode
+                                    response : s,
+                                    status_code : response.statusCode
                                 }, null, self, self.additional_arguments);
                             }
                         }
@@ -363,3 +360,5 @@ module.exports = function (_logger) {
 };
 
 attach(module.exports);
+
+
