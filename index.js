@@ -60,9 +60,9 @@ var https   = require('https'),
         };
 
         this.to = function (host, port, path) {
-            host = url.parse(host);
 
             if (!port && !path) {
+                host = url.parse(host);
                 this.host = host.hostname;
                 this.path = host.path;
                 this.port = host.port ? host.port : 80;
