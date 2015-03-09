@@ -6,11 +6,13 @@
     @author Raven Lagrimas
 */
 
-var https   = require('https'),
-    http    = require('http'),
-    url     = require('url'),
+var https = require('https'),
+    http = require('http'),
+    url = require('url'),
 
-    logger  = {log : function () {}},
+    logger = {
+        log: function () {}
+    },
 
     stringify = function (obj) {
         var ret = [],
@@ -18,9 +20,8 @@ var https   = require('https'),
 
         for (key in obj) {
             ret.push(
-                obj[key] === null
-                ? encodeURIComponent(key)
-                : encodeURIComponent(key) + '=' + encodeURIComponent(obj[key])
+                obj[key] === null ? encodeURIComponent(key) : encodeURIComponent(key) + '=' + encodeURIComponent(
+                    obj[key])
             );
         }
 
@@ -28,18 +29,18 @@ var https   = require('https'),
     },
 
     Request = function (method) {
-        this.method     = method;
-        this.secure     = false;
-        this.started    = false;
-        this.follow     = false;
-        this.headers    = {};
-        this.retries    = 0;
-        this.max_retry  = 3;
+        this.method = method;
+        this.secure = false;
+        this.started = false;
+        this.follow = false;
+        this.headers = {};
+        this.retries = 0;
+        this.max_retry = 3;
 
         this.to_string = function () {
             return [
                 this.method,
-                ' ' ,
+                ' ',
                 'http',
                 this.secured ? 's' : '',
                 '://',
@@ -130,8 +131,8 @@ var https   = require('https'),
             if (this.retries > this.max_retry) {
                 logger.log('error', 'Reached max retries');
                 this.cb({
-                        message : 'Reached max retries',
-                        url : this.host + ':' + this.port + this.path
+                        message: 'Reached max retries',
+                        url: this.host + ':' + this.port + this.path
                     },
                     null,
                     this,
@@ -215,14 +216,17 @@ var https   = require('https'),
 
                         if (self.follow && self.response_headers.location) {
                             if (!self.max_redirects) {
-                                self.cb({message : 'Too many redirects'}, s, self, self.additional_arguments);
+                                self.cb({
+                                    message: 'Too many redirects'
+                                }, s, self, self.additional_arguments);
                                 return;
                             }
 
                             temp = self.response_headers.location.split('/');
 
                             redir = new Request('GET')
-                                .to(temp[2], temp[0] === 'http:' ? 80 : 443, temp.splice(2, -1).join('/') || '/')
+                                .to(temp[2], temp[0] === 'http:' ? 80 : 443, temp.splice(2, -1).join(
+                                    '/') || '/')
                                 .follow_redirects(self.max_redirects - 1);
 
                             if (temp[0] === 'https:') {
@@ -239,7 +243,8 @@ var https   = require('https'),
                             logger.log('verbose', 'Response', response.statusCode);
                             logger.log('silly', s);
 
-                            if (response.headers['content-type'] === 'application/json') {
+                            if (response.headers['content-type'].split(';')[0] ===
+                                'application/json') {
                                 if (self.before_json) {
                                     s = self.before_json(s);
                                 }
@@ -259,8 +264,8 @@ var https   = require('https'),
                             }
                             else {
                                 self.cb({
-                                    response : s,
-                                    status_code : response.statusCode
+                                    response: s,
+                                    status_code: response.statusCode
                                 }, null, self, self.additional_arguments);
                             }
                         }
@@ -269,13 +274,13 @@ var https   = require('https'),
 
                 req.on('error', function (err) {
                     var retryable_errors = [
-                            'ECONNREFUSED',
-                            'ECONNRESET',
-                            'ENOTFOUND',
-                            'EADDRINFO',
-                            'ETIMEDOUT',
-                            'ESRCH'
-                        ];
+                        'ECONNREFUSED',
+                        'ECONNRESET',
+                        'ENOTFOUND',
+                        'EADDRINFO',
+                        'ETIMEDOUT',
+                        'ESRCH'
+                    ];
 
                     logger.log('error', 'Request error', err, self.host + ':' + self.port + self.path);
 
@@ -309,7 +314,8 @@ var https   = require('https'),
                 }
 
                 req.end();
-            } catch (e) {
+            }
+            catch (e) {
                 logger.log('error', e);
                 self.retry();
             }
@@ -319,25 +325,25 @@ var https   = require('https'),
 
     attach = function (object) {
         object.get = {
-            to : function (host, port, path) {
+            to: function (host, port, path) {
                 return new Request('GET').to(host, port, path);
             }
         };
 
         object.post = {
-            to : function (host, port, path) {
+            to: function (host, port, path) {
                 return new Request('POST').to(host, port, path);
             }
         };
 
         object.put = {
-            to : function (host, port, path) {
+            to: function (host, port, path) {
                 return new Request('PUT').to(host, port, path);
             }
         };
 
         object.delete = {
-            to : function (host, port, path) {
+            to: function (host, port, path) {
                 return new Request('DELETE').to(host, port, path);
             }
         };
@@ -360,5 +366,3 @@ module.exports = function (_logger) {
 };
 
 attach(module.exports);
-
-

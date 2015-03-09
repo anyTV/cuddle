@@ -1,22 +1,22 @@
 {
-  "name": "cuddle",
-  "version": "0.0.39",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/ravenjohn/cuddle.git"
-  },
-  "keywords": [
-    "cuddle"
-  ],
-  "author": "Raven Lagrimas <rjlagrimas08@gmail.com>",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/ravenjohn/cuddle/issues"
-  },
-  "homepage": "https://github.com/ravenjohn/cuddle"
+    "name": "cuddle",
+    "version": "0.0.40",
+    "description": "",
+    "main": "index.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/ravenjohn/cuddle.git"
+    },
+    "keywords": [
+        "cuddle"
+    ],
+    "author": "Raven Lagrimas <rjlagrimas08@gmail.com>",
+    "license": "ISC",
+    "bugs": {
+        "url": "https://github.com/ravenjohn/cuddle/issues"
+    },
+    "homepage": "https://github.com/ravenjohn/cuddle"
 }
