@@ -33,6 +33,7 @@ var https = require('https'),
         this.secure = false;
         this.started = false;
         this.follow = false;
+        this.request_opts = {};
         this.headers = {};
         this.retries = 0;
         this.max_retry = 3;
@@ -79,6 +80,11 @@ var https = require('https'),
                 this.port = port;
             }
 
+            this.request_opts = {
+                host: this.host,
+                port: this.port
+            };
+
             return this;
         };
 
@@ -94,6 +100,11 @@ var https = require('https'),
 
         this.add_header = function (key, value) {
             this.headers[key] = value;
+            return this;
+        };
+
+        this.add_opts = function (key, value) {
+            this.request_opts[key] = value;
             return this;
         };
 
@@ -180,14 +191,12 @@ var https = require('https'),
 
             protocol = this.secure ? https : http;
 
+            this.request_opts.path = new_path;
+            this.request_opts.method = this.method;
+            this.request_opts.headers = this.headers;
+
             try {
-                req = protocol.request({
-                    host: this.host,
-                    port: this.port,
-                    path: new_path,
-                    method: this.method,
-                    headers: this.headers
-                });
+                req = protocol.request(this.request_opts);
 
                 req.on('response', function (response) {
                     var s = '';
@@ -366,3 +375,4 @@ module.exports = function (_logger) {
 };
 
 attach(module.exports);
+
