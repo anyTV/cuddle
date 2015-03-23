@@ -155,6 +155,7 @@ var https = require('https'),
         };
 
         this.pipe = function(stream) {
+            logger.log('verbose', 'Piping file..');
             this._stream = stream;
             return this;
         };
@@ -205,11 +206,6 @@ var https = require('https'),
 
                     response.setEncoding('utf8');
 
-                    if (typeof(self._stream) !== 'undefined') {
-                        logger.log('info', 'Piping file..');
-                        response.pipe(self._stream);
-                    }
-
                     response.on('data', function(chunk) {
                         s += chunk;
                     });
@@ -241,8 +237,7 @@ var https = require('https'),
                             temp = self.response_headers.location.split('/');
 
                             redir = new Request('GET')
-                                .to(temp[2], temp[0] === 'http:' ? 80 : 443, temp.splice(2, -1).join(
-                                    '/') || '/')
+                                .to(self.response_headers.location)
                                 .follow_redirects(self.max_redirects - 1);
 
                             if (temp[0] === 'https:') {
@@ -251,6 +246,10 @@ var https = require('https'),
 
                             for (temp in self.headers) {
                                 redir = redir.add_header(temp, self.headers[temp]);
+                            }
+
+                            if (typeof(self._stream) !== 'undefined') {
+                                redir.pipe(self._stream);
                             }
 
                             redir.then(self.cb);
@@ -273,8 +272,17 @@ var https = require('https'),
                                 }
                             }
 
+
                             if (response.statusCode === 200) {
+
+                                console.log(self._stream);
+
+                                if (typeof(self._stream) !== 'undefined') {
+                                    response.pipe(self._stream);
+                                }
+
                                 self.cb(null, s, self, self.additional_arguments);
+
                             } else {
                                 self.cb({
                                     response: s,
