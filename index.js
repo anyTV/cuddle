@@ -11,10 +11,10 @@ var https = require('https'),
     url = require('url'),
 
     logger = {
-        log: function() {}
+        log: function () {}
     },
 
-    stringify = function(obj) {
+    stringify = function (obj) {
         var ret = [],
             key;
 
@@ -28,7 +28,7 @@ var https = require('https'),
         return ret.join('&');
     },
 
-    Request = function(method) {
+    Request = function (method) {
         this.method = method;
         this.secure = false;
         this.started = false;
@@ -37,8 +37,10 @@ var https = require('https'),
         this.headers = {};
         this.retries = 0;
         this.max_retry = 3;
+        this.callbacks = {};
+        this.encoding = 'utf8';
 
-        this.to_string = function() {
+        this.to_string = function () {
             return [
                 this.method,
                 ' ',
@@ -56,12 +58,12 @@ var https = require('https'),
             ].join('');
         };
 
-        this.raw = function() {
+        this.raw = function () {
             console.log('\tcudl.raw() is deprecated');
             return this;
         };
 
-        this.to = function(host, port, path) {
+        this.to = function (host, port, path) {
 
             if (!port && !path) {
                 host = url.parse(host);
@@ -73,7 +75,8 @@ var https = require('https'),
                     this.port = 443;
                     this.secure = true;
                 }
-            } else {
+            }
+            else {
                 this.path = path;
                 this.host = host;
                 this.port = port;
@@ -87,27 +90,27 @@ var https = require('https'),
             return this;
         };
 
-        this.set_max_retry = function(max) {
+        this.set_max_retry = function (max) {
             this.max_retry = max;
             return this;
         };
 
-        this.secured = function() {
+        this.secured = function () {
             this.secure = true;
             return this;
         };
 
-        this.add_header = function(key, value) {
+        this.add_header = function (key, value) {
             this.headers[key] = value;
             return this;
         };
 
-        this.add_opts = function(key, value) {
+        this.add_opts = function (key, value) {
             this.request_opts[key] = value;
             return this;
         };
 
-        this.then = function(cb) {
+        this.then = function (cb) {
             if (!this.cb) {
                 this.cb = cb;
             }
@@ -118,17 +121,22 @@ var https = require('https'),
             return this;
         };
 
-        this.args = function() {
+        this.args = function () {
             this.additional_arguments = arguments;
             return this;
         };
 
-        this.set_before_json = function(fn) {
+        this.set_before_json = function (fn) {
             this.before_json = fn;
             return this;
         };
 
-        this.follow_redirects = function(max_redirects) {
+        this.set_encoding = function (encoding) {
+            this.encoding = encoding;
+            return this;
+        };
+
+        this.follow_redirects = function (max_redirects) {
             this.max_redirects = +max_redirects || 3;
             this.follow = true;
             return this;
@@ -136,7 +144,7 @@ var https = require('https'),
 
         this.stringify = stringify;
 
-        this.retry = function() {
+        this.retry = function () {
             this.retries++;
             if (this.retries > this.max_retry) {
                 logger.log('error', 'Reached max retries');
@@ -154,13 +162,34 @@ var https = require('https'),
             return this.send(this.data);
         };
 
-        this.pipe = function(stream) {
+        this.pipe = function (stream) {
             logger.log('verbose', 'Piping file..');
             this._stream = stream;
             return this;
         };
 
-        this.send = function(data) {
+        this.on = function (event_type, next) {
+
+            if (this.callbacks[event_type]) {
+                this.callbacks[event_type] = this.callbacks[event_type].push(next);
+            }
+
+            this.callbacks[event_type] = [next];
+
+            return this;
+        };
+
+        this.emit = function (event_type, err, response) {
+            if (typeof (this.callbacks['data']) !== 'undefined') {
+                this.callbacks['data'].forEach(function (callback) {
+                    callback(err, response);
+                });
+            }
+
+            return this;
+        };
+
+        this.send = function (data) {
             var new_path = this.path,
                 self = this,
                 protocol,
@@ -172,12 +201,14 @@ var https = require('https'),
 
             if (data && this.method === 'GET') {
                 new_path += '?' + this.stringify(data);
-            } else {
+            }
+            else {
                 if (!this.headers['Content-Type']) {
                     payload = this.stringify(data);
                     this.headers['Content-Type'] = 'application/x-www-form-urlencoded';
                     this.headers['Content-Length'] = payload.length;
-                } else {
+                }
+                else {
                     payload = JSON.stringify(data);
                 }
             }
@@ -201,30 +232,36 @@ var https = require('https'),
             try {
                 req = protocol.request(this.request_opts);
 
-                req.on('response', function(response) {
+                req.on('response', function (response) {
                     var s = '';
 
-                    response.setEncoding('utf8');
+                    response.setEncoding(self.encoding);
 
-                    response.on('data', function(chunk) {
+                    response.on('data', function (chunk) {
                         s += chunk;
+
+                        self.emit('data', null, chunk);
+
                     });
 
-                    response.on('close', function() {
+                    response.on('close', function () {
                         logger.log('error', 'request closed');
+                        self.emit('close', 'request closed');
                         self.retry();
                     });
 
-                    response.on('error', function(err) {
+                    response.on('error', function (err) {
                         logger.log('error', 'Response error', err);
+                        self.emit('error', err);
                         self.retry();
                     });
 
-                    response.on('end', function() {
+                    response.on('end', function () {
                         var redir,
                             temp;
 
                         self.response_headers = response.headers;
+                        self.target_location = response.headers.location;
 
                         if (self.follow && self.response_headers.location) {
                             if (!self.max_redirects) {
@@ -248,12 +285,20 @@ var https = require('https'),
                                 redir = redir.add_header(temp, self.headers[temp]);
                             }
 
-                            if (typeof(self._stream) !== 'undefined') {
+                            if (typeof (self._stream) !== 'undefined') {
                                 redir.pipe(self._stream);
                             }
 
+                            if (typeof (self.callbacks) !== 'undefined') {
+                                redir.callbacks = self.callbacks;
+                            }
+
+                            redir.target_location = self.target_location;
+                            redir.set_encoding(self.encoding);
+
                             redir.then(self.cb);
-                        } else {
+                        }
+                        else {
                             logger.log('verbose', 'Response', response.statusCode);
                             logger.log('silly', s);
 
@@ -264,7 +309,8 @@ var https = require('https'),
                                 }
                                 try {
                                     s = JSON.parse(s);
-                                } catch (e) {
+                                }
+                                catch (e) {
                                     logger.log('error', 'JSON is invalid');
                                     logger.log('error', e);
                                     e.statusCode = response.statusCode;
@@ -275,15 +321,14 @@ var https = require('https'),
 
                             if (response.statusCode === 200) {
 
-                                console.log(self._stream);
-
-                                if (typeof(self._stream) !== 'undefined') {
+                                if (typeof (self._stream) !== 'undefined') {
                                     response.pipe(self._stream);
                                 }
 
                                 self.cb(null, s, self, self.additional_arguments);
 
-                            } else {
+                            }
+                            else {
                                 self.cb({
                                     response: s,
                                     status_code: response.statusCode
@@ -293,7 +338,7 @@ var https = require('https'),
                     });
                 });
 
-                req.on('error', function(err) {
+                req.on('error', function (err) {
                     var retryable_errors = [
                         'ECONNREFUSED',
                         'ECONNRESET',
@@ -315,17 +360,17 @@ var https = require('https'),
                     self.cb(err, null, self, self.additional_arguments);
                 });
 
-                req.on('continue', function() {
+                req.on('continue', function () {
                     logger.log('error', 'continue event emitted');
                     self.retry();
                 });
 
-                req.on('upgrade', function() {
+                req.on('upgrade', function () {
                     logger.log('error', 'upgrade event emitted');
                     self.retry();
                 });
 
-                req.on('connect', function() {
+                req.on('connect', function () {
                     logger.log('error', 'connect event emitted');
                     self.retry();
                 });
@@ -335,7 +380,8 @@ var https = require('https'),
                 }
 
                 req.end();
-            } catch (e) {
+            }
+            catch (e) {
                 logger.log('error', e);
                 self.retry();
             }
@@ -343,33 +389,33 @@ var https = require('https'),
         };
     },
 
-    attach = function(object) {
+    attach = function (object) {
         object.get = {
-            to: function(host, port, path) {
+            to: function (host, port, path) {
                 return new Request('GET').to(host, port, path);
             }
         };
 
         object.post = {
-            to: function(host, port, path) {
+            to: function (host, port, path) {
                 return new Request('POST').to(host, port, path);
             }
         };
 
         object.put = {
-            to: function(host, port, path) {
+            to: function (host, port, path) {
                 return new Request('PUT').to(host, port, path);
             }
         };
 
         object.delete = {
-            to: function(host, port, path) {
+            to: function (host, port, path) {
                 return new Request('DELETE').to(host, port, path);
             }
         };
 
-        object.request = function(method) {
-            this.to = function(host, port, path) {
+        object.request = function (method) {
+            this.to = function (host, port, path) {
                 return new Request(method).to(host, port, path);
             };
             return this;
@@ -380,9 +426,10 @@ var https = require('https'),
         return object;
     };
 
-module.exports = function(_logger) {
+module.exports = function (_logger) {
     logger = _logger || logger;
     return attach({});
 };
 
 attach(module.exports);
+
