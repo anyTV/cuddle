@@ -180,8 +180,8 @@ var https = require('https'),
         };
 
         this.emit = function (event_type, err, response) {
-            if (typeof (this.callbacks['data']) !== 'undefined') {
-                this.callbacks['data'].forEach(function (callback) {
+            if (typeof (this.callbacks[event_type]) !== 'undefined') {
+                this.callbacks[event_type].forEach(function (callback) {
                     callback(err, response);
                 });
             }
