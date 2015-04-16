@@ -162,7 +162,6 @@ var https = require('https'),
             return this.send(this.data);
         };
 
-        << << << < HEAD
         this.pipe = function (stream) {
             logger.log('verbose', 'Piping file..');
             this._stream = stream;
