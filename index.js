@@ -386,7 +386,7 @@ var https = require('https'),
                 req.end();
             }
             catch (e) {
-                logger.log('error', e);
+                logger.log('error', e.toString() || e);
                 self.retry();
             }
             return this;
