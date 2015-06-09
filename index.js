@@ -114,7 +114,7 @@ var https = require('https'),
         };
 
         this.then = function (cb) {
-            if (!this.cb) {
+            if (!this.real_cb) {
                 this.real_cb = cb;
             }
 
@@ -128,7 +128,10 @@ var https = require('https'),
             if (grapher) {
                 grapher(this.start_date, +new Date());
             }
-            this.real_cb.apply(this, arguments);
+
+            if (this.real_cb) {
+                this.real_cb.apply(this, arguments);
+            }
         };
 
         this.args = function () {
