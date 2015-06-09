@@ -197,7 +197,7 @@ var https = require('https'),
                 req;
 
             this.started = true;
-            this.data = data;
+            this.data = data || '';
 
             if (data && this.method === 'GET') {
                 new_path += '?' + this.stringify(data);
