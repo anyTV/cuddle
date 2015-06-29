@@ -320,7 +320,7 @@ var https = require('https'),
                             redir.target_location = self.target_location;
                             redir.set_encoding(self.encoding);
 
-                            redir.then(self.cb);
+                            redir.then(self.real_cb);
                         }
                         else {
                             self.req_log('verbose', 'Response', response.statusCode);
