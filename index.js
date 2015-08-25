@@ -338,7 +338,7 @@ var https = require('https'),
                                 catch (e) {
                                     self.req_log('error', 'JSON is invalid');
                                     self.req_log('error', e);
-                                    e.statusCode = response.statusCode;
+                                    e.status_code = response.statusCode;
                                     return self.cb(e, s, self, self.additional_arguments);
                                 }
                             }
