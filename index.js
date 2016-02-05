@@ -215,9 +215,9 @@ var https = require('https'),
             return this;
         };
         
-        this.yolo = function () {
+        this.allow_unauthorized = function () {
             this.reject_unauthorized = false;
-        }
+        };
 
         this.send = function (data) {
             var new_path = this.path,
