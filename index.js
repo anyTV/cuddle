@@ -217,6 +217,7 @@ var https = require('https'),
         
         this.allow_unauthorized = function () {
             this.reject_unauthorized = false;
+            return this;
         };
 
         this.send = function (data) {
