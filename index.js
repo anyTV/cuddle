@@ -214,7 +214,7 @@ var https = require('https'),
         };
 
         this.allow_unauthorized = function () {
-            this.request_opts.reject_unauthorized = false;
+            this.request_opts.rejectUnauthorized = false;
             return this;
         };
 
