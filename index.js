@@ -35,6 +35,7 @@ var https = require('https'),
         this.secure = false;
         this.started = false;
         this.follow = false;
+        this.reject_unauthorized = true;
         this.request_opts = {};
         this.headers = {};
         this.retries = 0;
@@ -87,7 +88,8 @@ var https = require('https'),
 
             this.request_opts = {
                 host: this.host,
-                port: this.port
+                port: this.port,
+                rejectUnauthorized: this.reject_unauthorized
             };
 
             return this;
@@ -211,6 +213,10 @@ var https = require('https'),
             }
 
             return this;
+        };
+        
+        this.allow_unauthorized = function () {
+            this.reject_unauthorized = false;
         };
 
         this.send = function (data) {
