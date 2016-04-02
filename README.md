@@ -1,54 +1,111 @@
-Cuddle
-===
+#Cuddle
 
-A very simple HTTP client for Node.js
-<!-- language:console -->
+[![Build Status](https://travis-ci.org/ravenjohn/cuddle.svg?branch=master)](https://travis-ci.org/ravenjohn/cuddle)
 
-	npm install cuddle
+Cuddle is a minimal, chainable, retryable and "readability first" node http client. It's built to use for calling third-party APIs.
 
-Sample
----
-<!-- language:console -->
+```sh
+npm install cuddle --save
+```
 
-    var request = require('cuddle');
+###Use Cases
 
-    request.get
-          .to('www.restserver.com:3000/user/1')
-          .then(callback);
+Simple
+```js
+const cudl = require('cuddle');
+
+cudl.post
+    .to('http://localhost:8082/api/user/1')
+    .set_header('Authorization', 'Token sampletoken')
+    .send({
+        username: 'rvnjl',
+        sex: 'male'
+    })
+    .then((err, result) => {
+        if (err) {
+            //handle error
+        }
+        console.log(result);
+    });
+```
 
 
+Promise:
+```js
+const cudl = require('cuddle');
+
+cudl.post
+    .to('http://localhost:8082/api/user/1')
+    .add_header('Authorization', 'Token sampletoken')
+    .send({
+        username: 'rvnjl',
+        sex: 'male'
+    })
+    .promise()
+    .then(success)
+    .catch(fail);
+```
 
 
-Features
----
+Using with generators:
+```js
+const cudl = require('cuddle');
+const co = require('co');
 
-1. Chainable
-2. Very readable
-3. Helps closures by using `.args()`
-4. Auto-retry for errors like `ECONNREFUSED`, `ENOTFOUND`, `ECONNRESET`,  `EADDRINFO`, `ESRCH`
+function* foo () {
+    let user = yield cudl.get
+        .to('http://localhost:8082/api/user/1')
+        .add_header('Authorization', 'Token sampletoken')
+        .promise();
+
+    console.log(user);
+}
+
+co(foo);
+```
+
+Easy scoping through args:
+```js
+const cudl = require('cuddle');
+
+function foo () {
+    const users = [
+        {id: 1, name: 'jeff'},
+        {id: 2, name: 'jenny'},
+        {id: 3, name: 'julius'}
+    ];
+
+    users.forEach(user => {
+        cudl.get
+            .to('http://localhost:8082/api/user/' + user.id)
+            .args(user)
+            //.max_retry(10)    // default is 3
+            //.debug()          // if you want to log all
+            //.logger(winston)  // if you want to replace the logger (console)
+            .then(bar);
+    });
+}
+
+function bar (err, result, request, args) {
+    const user = args[0];
+
+    if (err) {
+        // cuddle will return a different error after reaching maximum retries
+        if (err.status_code >= 500) {
+            return request.retry();
+        }
+
+        console.error('Error with user ' + user.id + request);
+        return;
+    }
+
+    user.more_info = result;
+
+    // ...
+}
+
+foo();
+```
 
 
-Functions
----
-
-Function/Property | Parameter | Return | Description
---- | --- | --- | ---
-cuddle(logger) | logger e.g. `console`, `winston` | cuddle | Sets the logger
-cuddle.stringify(object) | object | string | Converts `{a:1, b:2}` to `a=1&b=2`
-cuddle.get | n/a | request object | Instantiates a `GET` request
-cuddle.post | n/a | request object | Instantiates a `POST` request
-cuddle.put | n/a | request object | Instantiates a `PUT` request
-cuddle.delete | n/a | request object | Instantiates a `DELETE` request
-cuddle.request('PATCH') | method | request object | Instantiates a request using the given method
-request.to('host', port, 'path') | host  <br/> port <br/> path | itself | Sets the request uri
-request.add_header('header', 'value') | header <br /> value | itself | adds header
-request.args('arg1', [arg2], {arg3}, arg4) | any number of arguments | itself | Accepts any number of arguments and will be passed as the fourth paramater on callback as an [array]
-request.set_before_json(fn) | function | itself | Accepts a function to execute before parsing the data to JSON
-request.raw() | none | itself | Disable automatic JSON parsing, removes default `application/json` on `Accept` header
-request.secured() | none | itself | Will use https, but be sure to pass 443 as the port
-request.follow_redirects(5) | number | itself | Follow redirects up to passed max redirects, default is 3
-request.send({data}) | data | itself | Sets the payload
-request.set_max_retry(5) | number | itself | Sets the max retry, default is 3
-request.retry() | none | itself | Retries the request
-request.then(fn) | function | itself | Sets the callback then executes request. Callback arguments are `err` non-200 status codes will be considered as an error, `result` response data, `request` the request it self so you can call retry if you want and the request will have a `response_headers` property if you need it, lastly `args` if you used `.args`
-
+Status code < 200 or >= 300 will be classifed as an error.
