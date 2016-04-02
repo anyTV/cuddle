@@ -2,7 +2,7 @@
 
 [![Build Status](https://travis-ci.org/ravenjohn/cuddle.svg?branch=master)](https://travis-ci.org/ravenjohn/cuddle)
 
-Cuddle is a minimal, chainable, retryable and "readability first" node http client. It's built to use for calling third-party APIs.
+Cuddle is a minimal, chainable, retryable and "readability first" node http client. It's built to use for calling third-party APIs. Just what you need.
 
 ```sh
 npm install cuddle --save
