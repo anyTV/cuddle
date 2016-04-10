@@ -9,7 +9,7 @@ import url      from 'url';
 export default class Request {
 
     static get RETRYABLES () {
-        return [
+        return Request._retryables || [
             'ECONNREFUSED',
             'ECONNRESET',
             'ENOTFOUND',
@@ -19,6 +19,20 @@ export default class Request {
         ];
     }
 
+    static set RETRYABLES (retryables) {
+        Request._retryables = retryables;
+    }
+
+    static get MAX_RETRY () {
+        return isFinite(Request._max_retry)
+            ? Request._max_retry
+            : 3;
+    }
+
+    static set MAX_RETRY (max_retry) {
+        Request._max_retry = max_retry;
+    }
+
     constructor (method) {
         this.method         = method;
         this.data           = '';
@@ -26,7 +40,7 @@ export default class Request {
         this.callbacks      = {};
         this.request_opts   = {};
         this.retries        = 0;
-        this.max_retry      = 3;
+        this._max_retry     = Request.MAX_RETRY;
         this.secure         = false;
         this.follow         = false;
         this.started        = false;
@@ -158,7 +172,7 @@ export default class Request {
 
     retry () {
 
-        if (this.retries++ < this.max_retry) {
+        if (this.retries++ < this._max_retry) {
             this.log('warn', 'Retrying request');
             return this.send(this.data);
         }
@@ -343,7 +357,7 @@ export default class Request {
 
         this.log('error', 'Request error', err);
 
-        if (~Request.RETRYABLES.indexOf(err.code) && this.retries < this.max_retry) {
+        if (~Request.RETRYABLES.indexOf(err.code) && this.retries < this._max_retry) {
             return this.retry();
         }
 
