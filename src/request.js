@@ -119,6 +119,13 @@ export default class Request {
     }
 
 
+    add_header (key, value) {
+        console.error(`Cuddle's add_header will be deprecated. Use set_header instead.`);
+        this.headers[key] = value;
+        return this;
+    }
+
+
     set_header (key, value) {
         this.headers[key] = value;
         return this;
