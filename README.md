@@ -8,9 +8,9 @@ Cuddle is a minimal, chainable, retryable and "readability first" node http clie
 npm install cuddle --save
 ```
 
-###Use Cases
+##Use Cases
 
-Simple
+###Simple
 ```js
 const cudl = require('cuddle');
 
@@ -30,13 +30,13 @@ cudl.post
 ```
 
 
-Promise:
+###Promise:
 ```js
 const cudl = require('cuddle');
 
 cudl.post
     .to('http://localhost:8082/api/user/1')
-    .add_header('Authorization', 'Token sampletoken')
+    .set_header('Authorization', 'Token sampletoken')
     .send({
         username: 'rvnjl',
         sex: 'male'
@@ -47,7 +47,7 @@ cudl.post
 ```
 
 
-Using with generators:
+###Using with generators:
 ```js
 const cudl = require('cuddle');
 const co = require('co');
@@ -55,7 +55,7 @@ const co = require('co');
 function* foo () {
     let user = yield cudl.get
         .to('http://localhost:8082/api/user/1')
-        .add_header('Authorization', 'Token sampletoken')
+        .set_header('Authorization', 'Token sampletoken')
         .promise();
 
     console.log(user);
@@ -64,7 +64,7 @@ function* foo () {
 co(foo);
 ```
 
-Easy scoping through args:
+###Easy scoping through args:
 ```js
 const cudl = require('cuddle');
 
