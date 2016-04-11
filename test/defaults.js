@@ -24,11 +24,11 @@ describe('Defaults', () => {
     });
 
 
-    it ('should set MAX_RETRY to 0', done => {
+    it ('should set MAX_RETRY to 3', done => {
 
-        cudl.Request.MAX_RETRY.should.equal(3);
-        cudl.Request.MAX_RETRY = 0;
         cudl.Request.MAX_RETRY.should.equal(0);
+        cudl.Request.MAX_RETRY = 3;
+        cudl.Request.MAX_RETRY.should.equal(3);
 
         done();
     });

@@ -43,7 +43,7 @@ describe('GET request', () => {
         cudl.get
             .to(`http://localhost:${PORT}`)
             .send(payload)
-            .then((err, result, request) => {
+            .end((err, result, request) => {
 
                 result.query.should.be.eql(payload);
 

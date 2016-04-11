@@ -26,7 +26,7 @@ export default class Request {
     static get MAX_RETRY () {
         return isFinite(Request._max_retry)
             ? Request._max_retry
-            : 3;
+            : 0;
     }
 
     static set MAX_RETRY (max_retry) {
@@ -34,18 +34,22 @@ export default class Request {
     }
 
     constructor (method) {
+        this._max_retry     = Request.MAX_RETRY;
+        this._retryables    = Request.RETRYABLES;
+
         this.method         = method;
         this.data           = '';
         this.headers        = {};
         this.callbacks      = {};
         this.request_opts   = {};
         this.retries        = 0;
-        this._max_retry     = Request.MAX_RETRY;
         this.secure         = false;
         this.follow         = false;
         this.started        = false;
         this.encoding       = 'utf8';
         this.logger         = console;
+
+        this.end            = this.then;
     }
 
     /**
@@ -119,6 +123,12 @@ export default class Request {
     }
 
 
+    set_retryables (retryables) {
+        this._retryables = retryables;
+        return this;
+    }
+
+
     add_header (key, value) {
         console.error(`Cuddle's add_header will be deprecated. Use set_header instead.`);
         this.headers[key] = value;
@@ -138,8 +148,15 @@ export default class Request {
     }
 
     then (cb) {
+
+        // if cb is not a function, make it a no-op
+        if (typeof cb !== 'function') {
+            cb = () => {};
+        }
+
         this.cb = cb;
         this.start();
+
         return this;
     }
 
@@ -364,10 +381,11 @@ export default class Request {
 
         this.log('error', 'Request error', err);
 
-        if (~Request.RETRYABLES.indexOf(err.code) && this.retries < this._max_retry) {
+        if (~this._retryables.indexOf(err.code) && this.retries < this._max_retry) {
             return this.retry();
         }
 
         this.cb(err, null, this, this.additional_arguments);
+
     }
 }
