@@ -109,3 +109,10 @@ foo();
 
 
 Status code < 200 or >= 300 will be classifed as an error.
+
+
+##Migrating from version <= 0.0.56
+1. No longer support logger in class constructor
+2. max_retry default to 0
+3. then/end must be called to start the request
+4. `add_header` is now `set_header`
