@@ -48,6 +48,7 @@ export default class Request {
         this.started        = false;
         this.encoding       = 'utf8';
         this.logger         = console;
+        this.errors         = [];
 
         this.end            = this.then;
     }
@@ -204,6 +205,7 @@ export default class Request {
         this.cb(
             {
                 message: 'Reached max retries',
+                errors: this.errors,
                 url: this.uri
             },
             null,
@@ -301,11 +303,13 @@ export default class Request {
 
         response.on('close', () => {
             this.log('error', 'Response closed');
+            this.errors.push('Response closed');
             this.retry();
         });
 
         response.on('error', err => {
             this.log('error', 'Response error', err);
+            this.errors.push('Response closed');
             this.retry();
         });
 
@@ -382,6 +386,7 @@ export default class Request {
         this.log('error', 'Request error', err);
 
         if (~this._retryables.indexOf(err.code) && this.retries < this._max_retry) {
+            this.errors.push(err);
             return this.retry();
         }
 
