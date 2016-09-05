@@ -91,7 +91,7 @@ function bar (err, result, request, args) {
 
     if (err) {
         // cuddle will return a different error after reaching maximum retries
-        if (err.status_code >= 500) {
+        if (err.code >= 500) {
             return request.retry();
         }
 
