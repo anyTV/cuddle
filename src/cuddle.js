@@ -29,4 +29,8 @@ export default class Cuddle {
     static stringify () {
         return Request.stringify.apply(null, arguments);
     }
+
+    static throttle (n) {
+        return Request.throttle(n);
+    }
 }

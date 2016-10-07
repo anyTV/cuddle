@@ -1,10 +1,10 @@
 {
   "name": "cuddle",
-  "version": "1.0.4",
+  "version": "1.1.0",
   "description": "Cuddle is a minimal, chainable and readability first http client",
   "main": "index.js",
   "scripts": {
-    "test": "mocha"
+    "test": "mocha -t 10000000"
   },
   "repository": {
     "type": "git",

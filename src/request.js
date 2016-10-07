@@ -9,7 +9,7 @@ import url      from 'url';
 export default class Request {
 
     static get RETRYABLES () {
-        return Request._retryables || [
+        return this._retryables || [
             'ECONNREFUSED',
             'ECONNRESET',
             'ENOTFOUND',
@@ -20,37 +20,17 @@ export default class Request {
     }
 
     static set RETRYABLES (retryables) {
-        Request._retryables = retryables;
+        this._retryables = retryables;
     }
 
     static get MAX_RETRY () {
-        return isFinite(Request._max_retry)
-            ? Request._max_retry
+        return isFinite(this._max_retry)
+            ? this._max_retry
             : 0;
     }
 
     static set MAX_RETRY (max_retry) {
-        Request._max_retry = max_retry;
-    }
-
-    constructor (method) {
-        this._max_retry     = Request.MAX_RETRY;
-        this._retryables    = Request.RETRYABLES;
-
-        this.method         = method;
-        this.data           = '';
-        this.headers        = {};
-        this.callbacks      = {};
-        this.request_opts   = {};
-        this.retries        = 0;
-        this.secure         = false;
-        this.follow         = false;
-        this.started        = false;
-        this.encoding       = 'utf8';
-        this.logger         = console;
-        this.errors         = [];
-
-        this.end            = this.then;
+        this._max_retry = max_retry;
     }
 
     /**
@@ -74,6 +54,65 @@ export default class Request {
                         : `=${encodeURIComponent(obj[key])}`)
             })
             .join('&');
+    }
+
+    static throttle (n) {
+        this._max_running = n;
+        this._max_concurrent = n;
+    }
+
+    static request_start (req) {
+
+        if (!this._max_running) {
+            return req.start();
+        }
+
+        if (!this._requests_queue) {
+            this._running = 0;
+            this._requests_queue = [];
+        }
+
+        if (this._running < this._max_running) {
+            this._running++;
+            return req.start();
+        }
+
+        this._requests_queue.push(req);
+    }
+
+    static request_done () {
+
+        if (!this._max_running) {
+            return;
+        }
+
+        if (this._requests_queue.length) {
+            const req = this._requests_queue.shift();
+            return req.start();
+        }
+
+        this._running--;
+    }
+
+
+    constructor (method) {
+        this._max_retry     = Request.MAX_RETRY;
+        this._retryables    = Request.RETRYABLES;
+
+        this.method         = method;
+        this.data           = '';
+        this.headers        = {};
+        this.callbacks      = {};
+        this.request_opts   = {};
+        this.retries        = 0;
+        this.secure         = false;
+        this.follow         = false;
+        this.started        = false;
+        this.encoding       = 'utf8';
+        this.logger         = console;
+        this.errors         = [];
+
+        this.end            = this.then;
     }
 
 
@@ -148,15 +187,19 @@ export default class Request {
         return this;
     }
 
-    then (cb) {
+    then (_cb) {
 
         // if cb is not a function, make it a no-op
-        if (typeof cb !== 'function') {
-            cb = () => {};
+        if (typeof _cb !== 'function') {
+            _cb = () => {};
         }
 
-        this.cb = cb;
-        this.start();
+        this.cb = function () {
+            Request.request_done();
+            _cb(...arguments);
+        };
+
+        Request.request_start(this);
 
         return this;
     }

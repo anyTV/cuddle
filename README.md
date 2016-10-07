@@ -64,6 +64,13 @@ function* foo () {
 co(foo);
 ```
 
+###Throttling requests
+```js
+// will only let 50 concurrent requests
+cudl.throttle(50);
+```
+
+
 ###Easy scoping through args:
 ```js
 const cudl = require('cuddle');
