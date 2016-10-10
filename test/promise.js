@@ -14,4 +14,10 @@ describe('promise', () => {
         done();
     });
 
+    it ('should call catch', done => {
+        cudl.get
+            .to('http://localhos')
+            .promise()
+            .catch(err => done());
+    });
 });

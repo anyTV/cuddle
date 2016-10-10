@@ -258,12 +258,9 @@ export default class Request {
     }
 
     promise () {
-        return new Promise(resolve => {
+        return new Promise((resolve, reject) => {
             this.then((err, result) =>
-                resolve(err
-                    ? new Error(JSON.stringify(err))
-                    : result
-                )
+                (err && reject(err)) || resolve(result)
             );
         });
     }
