@@ -273,6 +273,7 @@ export default class Request {
 
     start () {
 
+        // do not override the this.path because of redirects or retries
         let new_path = this.path;
         let payload = '';
 
@@ -281,8 +282,15 @@ export default class Request {
 
         // form payload
         if (this.method === 'GET') {
-            // do not override the this.path because of redirects or retries
-            new_path += '?' + Request.stringify(this.data);
+
+            let data = Request.stringify(this.data);
+
+            if (data && ~new_path.indexOf('?')) {
+                new_path += '&' + data;
+            }
+            else if (data) {
+                new_path += '?' + data;
+            }
         }
         else {
             payload = (!this.headers['Content-Type'] && this.data)

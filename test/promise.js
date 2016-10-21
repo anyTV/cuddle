@@ -8,7 +8,9 @@ describe('promise', () => {
     it ('should return a promise', done => {
         let promise = cudl.get
             .to('http://localhost')
-            .promise();
+            .promise()
+            // suppress warning for unhandled promise
+            .catch(err => err);
 
         promise.should.be.an.instanceOf(Promise);
         done();

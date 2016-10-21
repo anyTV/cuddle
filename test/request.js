@@ -55,6 +55,26 @@ describe('GET request', () => {
 });
 
 
+describe('GET request with ?pre=data', () => {
+
+    it ('should send a complete GET request', done => {
+        const payload = {a:'sample', b:'sample2'};
+
+        cudl.get
+            .to(`http://localhost:${PORT}?pre=data`)
+            .send(payload)
+            .end((err, result, request) => {
+
+                payload.pre = 'data';
+                result.query.should.be.eql(payload);
+
+                done();
+            });
+
+    });
+
+});
+
 
 describe('POST request', () => {
 
