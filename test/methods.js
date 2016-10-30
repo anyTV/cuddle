@@ -1,9 +1,9 @@
 'use strict';
 
-const cudl      = require(__dirname + '/../index');
-const should    = require('chai').should();
-const http      = require('http');
-const PORT      = 8064;
+const cudl   = require(__dirname + '/../index');
+const should = require('should');
+const http   = require('http');
+const PORT   = 8064;
 
 let server;
 

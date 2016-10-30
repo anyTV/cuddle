@@ -1,9 +1,9 @@
 'use strict';
 
-const cudl      = require(__dirname + '/../index');
-const http      = require('http');
-const url       = require('url');
-const PORT      = 8066;
+const cudl = require(__dirname + '/../index');
+const http = require('http');
+const url  = require('url');
+const PORT = 8066;
 
 let server;
 

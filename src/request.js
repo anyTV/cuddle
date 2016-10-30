@@ -47,12 +47,12 @@ export default class Request {
         }
 
         return Object.keys(obj || {})
-            .map(key => {
-                return encodeURIComponent(key) +
+            .map(key =>
+                encodeURIComponent(key) +
                     (obj[key] === null
                         ? ''
                         : `=${encodeURIComponent(obj[key])}`)
-            })
+            )
             .join('&');
     }
 
@@ -96,6 +96,9 @@ export default class Request {
 
 
     constructor (method) {
+
+        method = method.toUpperCase();
+
         this._max_retry     = Request.MAX_RETRY;
         this._retryables    = Request.RETRYABLES;
 
