@@ -1,7 +1,7 @@
 'use strict';
 
-const cudl      = require(__dirname + '/../index');
-const should    = require('chai').should();
+const cudl   = require(__dirname + '/../index');
+const should = require('should');
 
 
 

@@ -1,10 +1,17 @@
 'use strict';
 
-import Request from './request';
-
+import Request from './Request';
 
 
 export default class Cuddle {
+
+    static get Request () {
+        return Request;
+    }
+
+    static get stringify () {
+        return Request.stringify;
+    }
 
     static get get () {
         return new Request('GET');
@@ -24,10 +31,6 @@ export default class Cuddle {
 
     static request (method) {
         return new Request(method);
-    }
-
-    static stringify () {
-        return Request.stringify.apply(null, arguments);
     }
 
     static throttle (n) {
