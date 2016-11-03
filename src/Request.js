@@ -331,6 +331,7 @@ export default class Request {
 
         // attach event handlers
         req.on('response',  this.handle_response.bind(this));
+        req.on('socket',    this.handle_timeout.bind(this));
         req.on('error',     this.handle_error.bind(this));
 
         // send payload
@@ -432,6 +433,16 @@ export default class Request {
         redir.set_encoding(this.encoding);
 
         return redir.then(this.cb);
+    }
+
+
+    handle_timeout (socket) {
+
+        socket.setTimeout(1000 * 30);
+
+        socket.on('timeout', () => {
+            this.request.abort();
+        });
     }
 
 
