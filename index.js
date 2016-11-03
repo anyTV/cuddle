@@ -200,7 +200,10 @@ class Request {
         this.cb = function () {
             Request.request_done();
             _cb(...arguments);
-        };
+
+            // handle the case where `error` is called twice
+            this.cb = () => {};
+        }.bind(this);
 
         Request.request_start(this);
 
