@@ -441,7 +441,9 @@ class Request {
         socket.setTimeout(1000 * 30);
 
         socket.on('timeout', () => {
-            this.request.abort();
+            if (this.request) {
+                this.request.abort();
+            }
         });
     }
 
