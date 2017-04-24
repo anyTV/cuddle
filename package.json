@@ -1,6 +1,6 @@
 {
   "name": "cuddle",
-  "version": "1.1.8",
+  "version": "1.1.9",
   "description": "Cuddle is a minimal, chainable and readability first http client",
   "main": "index.js",
   "scripts": {
