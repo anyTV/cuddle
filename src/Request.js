@@ -151,10 +151,8 @@ export default class Request {
         }
 
         this.path = uri.path;
-        this.request_opts = {
-            host: uri.hostname,
-            port
-        };
+        this.request_opts.host = uri.hostname;
+        this.request_opts.port = port;
 
         return this;
     }
