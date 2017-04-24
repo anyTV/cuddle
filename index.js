@@ -58,7 +58,6 @@ class Request {
 
     static throttle (n) {
         this._max_running = n;
-        this._max_concurrent = n;
     }
 
     static request_start (req) {
@@ -108,6 +107,7 @@ class Request {
         this.callbacks      = {};
         this.request_opts   = {};
         this.retries        = 0;
+        this.auto_format    = true;
         this.secure         = false;
         this.follow         = false;
         this.started        = false;
@@ -226,6 +226,11 @@ class Request {
         return this;
     }
 
+    format_payload (fmt) {
+        this.auto_format = fmt;
+        return this;
+    }
+
     logger (logger) {
         this.logger = logger;
         return this;
@@ -298,10 +303,13 @@ class Request {
                 new_path += '?' + data;
             }
         }
-        else {
+        else if (this.auto_format) {
             payload = (!this.headers['Content-Type'] && this.data)
                 ? Request.stringify(this.data)
                 : JSON.stringify(this.data);
+        }
+        else {
+            payload = this.data;
         }
 
 
