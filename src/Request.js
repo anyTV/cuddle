@@ -323,7 +323,7 @@ export default class Request {
         }
 
         if (payload) {
-            this.headers['Content-Length'] = payload.length;
+            this.headers['Content-Length'] = Buffer.byteLength(payload);
         }
 
 
