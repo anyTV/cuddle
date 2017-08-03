@@ -1,6 +1,6 @@
 'use strict';
 
-const cudl = require(__dirname + '/../index');
+import cudl from './../../index';
 
 
 describe('promise', () => {
@@ -20,6 +20,6 @@ describe('promise', () => {
         cudl.get
             .to('http://localhos')
             .promise()
-            .catch(err => done());
+            .catch(() => done());
     });
 });
