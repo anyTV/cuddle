@@ -1,6 +1,8 @@
 # Cuddle
 
 [![Build Status](https://travis-ci.org/ravenjohn/cuddle.svg?branch=master)](https://travis-ci.org/ravenjohn/cuddle)
+[![NPM version](https://img.shields.io/npm/v/cuddle.svg)](https://www.npmjs.com/package/cuddle)
+
 
 Cuddle is a minimal, chainable, retryable and "readability first" node http client. It's built to use for calling third-party APIs. Just what you need.
 
