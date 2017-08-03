@@ -5,4 +5,4 @@ install:
   - "npm install"
 before_script:
   - npm install -g grunt
-script: grunt build
+script: grunt build && npm test
