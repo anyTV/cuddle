@@ -121,7 +121,6 @@ export default class Request {
             `GET http://host.com/hello
             Payload:    {searh: "key"}
             Headers:    {accept: "application/json"}`
-        @usage          console.log('Request ' + request);
     */
     toString () {
         return `${this.method} http${this.secure ? 's' : ''}://${this.request_opts.host}`
@@ -193,10 +192,11 @@ export default class Request {
 
         this.cb = function () {
             Request.request_done();
-            _cb(...arguments);
 
             // handle the case where `error` is called twice
             this.cb = () => {};
+
+            _cb(...arguments);
         }.bind(this);
 
         Request.request_start(this);
@@ -283,6 +283,7 @@ export default class Request {
         let payload = '';
 
         this.started = true;
+
 
 
         // form payload
@@ -384,6 +385,7 @@ export default class Request {
         this.log('silly', this.raw);
 
 
+
         // try parsing if application/json
         let content_type = this.response.headers['content-type'];
 
@@ -404,8 +406,10 @@ export default class Request {
                 code: this.response.statusCode
             };
 
+
             return this.cb(error, null, this, this.additional_arguments);
         }
+
 
         // everything is good
         this.cb(null, this.raw, this, this.additional_arguments);
