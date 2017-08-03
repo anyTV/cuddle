@@ -1,8 +1,6 @@
 'use strict';
 
-const cudl   = require(__dirname + '/../index');
-const should = require('should');
-
+import cudl from './../index';
 
 
 describe('Defaults', () => {

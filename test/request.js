@@ -1,38 +1,8 @@
 'use strict';
 
-const cudl = require(__dirname + '/../index');
-const http = require('http');
-const url  = require('url');
-const PORT = 8066;
-
-let server;
-
-
-before(done => {
-    server = http.createServer((req, res) => {
-        let raw = '';
-
-        req.on('data', chunk => raw += chunk)
-            .on('end', end);
-
-        function end () {
-            res.writeHead(200, {
-                'Content-Type': 'application/json'
-            });
-
-            res.end(JSON.stringify({
-                headers: req.headers,
-                method: req.method,
-                query: url.parse(req.url, true).query,
-                body: new Buffer(raw, 'utf8').toString()
-            }));
-        }
-
-    })
-    .listen(PORT, done);
-});
-
-after(done => server.close(done));
+import cudl from './../index';
+import nock from 'nock';
+import url from 'url';
 
 
 describe('GET request', () => {
@@ -40,12 +10,18 @@ describe('GET request', () => {
     it ('should send a complete GET request', done => {
         const payload = {a:'sample', b:'sample2'};
 
-        cudl.get
-            .to(`http://localhost:${PORT}`)
-            .send(payload)
-            .end((err, result, request) => {
+        nock('http://localhost')
+            .get(/a=sample&b=sample2/)
+            .reply(200, function (uri, body, cb) {
+                cb(null, url.parse(this.req.path, true).query);
+            });
 
-                result.query.should.be.eql(payload);
+        cudl.get
+            .to('http://localhost')
+            .send(payload)
+            .end((err, result) => {
+
+                result.should.be.eql(payload);
 
                 done();
             });
@@ -60,13 +36,20 @@ describe('GET request with ?pre=data', () => {
     it ('should send a complete GET request', done => {
         const payload = {a:'sample', b:'sample2'};
 
+        nock('http://localhost')
+            .get(/a=sample&b=sample2/)
+            .reply(200, function (uri, body, cb) {
+                cb(null, url.parse(this.req.path, true).query);
+            });
+
         cudl.get
-            .to(`http://localhost:${PORT}?pre=data`)
+            .to(`http://localhost?pre=data`)
             .send(payload)
-            .end((err, result, request) => {
+            .end((err, result) => {
 
                 payload.pre = 'data';
-                result.query.should.be.eql(payload);
+
+                result.should.be.eql(payload);
 
                 done();
             });
@@ -79,14 +62,19 @@ describe('GET request with ?pre=data', () => {
 describe('POST request', () => {
 
     it ('should send a complete POST request', done => {
+
+        nock('http://localhost')
+            .post('/')
+            .reply(200, (uri, body, cb) => cb(null, body));
+
         const payload = {a:'sample', b:'sample2'};
 
         cudl.post
-            .to(`http://localhost:${PORT}`)
+            .to('http://localhost')
             .send(payload)
-            .then((err, result, request) => {
+            .then((err, result) => {
 
-                result.body.should.be.eql('a=sample&b=sample2');
+                result.should.be.eql('a=sample&b=sample2');
 
                 done();
             });
@@ -101,15 +89,20 @@ describe('POST request', () => {
 describe('PUT JSON request', () => {
 
     it ('should send a complete POST request', done => {
+
+        nock('http://localhost')
+            .put('/')
+            .reply(200, (uri, body) => body);
+
     	const payload = {a:'sample', b:'sample2'};
 
         cudl.put
-            .to(`http://localhost:${PORT}`)
+            .to('http://localhost')
             .set_header('Content-Type', 'application/json')
             .send(payload)
-            .then((err, result, request) => {
+            .then((err, result) => {
 
-                result.body.should.be.eql(JSON.stringify(payload));
+                result.should.be.eql(payload);
 
 		        done();
             });

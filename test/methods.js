@@ -1,73 +1,82 @@
 'use strict';
 
-const cudl   = require(__dirname + '/../index');
-const should = require('should');
-const http   = require('http');
-const PORT   = 8064;
-
-let server;
-
-
-before(done => {
-    server = http.createServer((req, res) => {
-            res.setHeader('Content-Type', 'application/json');
-            res.writeHead(200);
-            res.end(JSON.stringify({
-                headers: req.headers,
-                method: req.method,
-                query: req.query,
-                body: req.body
-            }));
-        })
-        .listen(PORT, done);
-});
-
-after(done => server.close(done));
+import cudl from './../index';
+import should from 'should';
+import nock from 'nock';
 
 
 describe('methods', () => {
 
     it ('should send a GET request', done => {
+
+        nock('http://localhost')
+            .get('/')
+            .reply(200, 'ok');
+
         cudl.get
-            .to(`http://localhost:${PORT}`)
+            .to(`http://localhost`)
             .then((err, result) => {
-                result.method.should.equal('GET');
+                result.should.equal('ok');
                 done();
             });
     });
+
 
     it ('should send a POST request', done => {
+
+        nock('http://localhost')
+            .post('/')
+            .reply(200, 'ok');
+
         cudl.post
-            .to(`http://localhost:${PORT}`)
+            .to(`http://localhost`)
             .then((err, result) => {
-                result.method.should.equal('POST');
+                result.should.equal('ok');
                 done();
             });
     });
+
 
     it ('should send a PUT request', done => {
+
+        nock('http://localhost')
+            .put('/')
+            .reply(200, 'ok');
+
         cudl.put
-            .to(`http://localhost:${PORT}`)
+            .to(`http://localhost`)
             .then((err, result) => {
-                result.method.should.equal('PUT');
+                result.should.equal('ok');
                 done();
             });
     });
+
 
     it ('should send a DELETE request', done => {
+
+        nock('http://localhost')
+            .delete('/')
+            .reply(200, 'ok');
+
         cudl.delete
-            .to(`http://localhost:${PORT}`)
+            .to(`http://localhost`)
             .then((err, result) => {
-                result.method.should.equal('DELETE');
+                result.should.equal('ok');
                 done();
             });
     });
 
+
     it ('should send a PATCH request', done => {
+
+        nock('http://localhost')
+            .patch('/')
+            .reply(200, 'ok');
+
         cudl.request('PATCH')
-            .to(`http://localhost:${PORT}`)
+            .to(`http://localhost`)
             .then((err, result) => {
-                result.method.should.equal('PATCH');
+                result.should.equal('ok');
                 done();
             });
     });

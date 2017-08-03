@@ -184,6 +184,8 @@ export default class Request {
 
     then (_cb) {
 
+        this._final_cb = _cb;
+
         // if cb is not a function, make it a no-op
         if (typeof _cb !== 'function') {
             _cb = () => {};
@@ -245,7 +247,7 @@ export default class Request {
 
         if (this.retries++ < this._max_retry) {
             this.log('warn', 'Retrying request');
-            return this.send(this.data);
+            return this.then(this._final_cb);
         }
 
         this.cb(
