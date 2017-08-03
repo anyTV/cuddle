@@ -1,16 +1,22 @@
-#Cuddle
+# Cuddle
 
 [![Build Status](https://travis-ci.org/ravenjohn/cuddle.svg?branch=master)](https://travis-ci.org/ravenjohn/cuddle)
 
 Cuddle is a minimal, chainable, retryable and "readability first" node http client. It's built to use for calling third-party APIs. Just what you need.
 
 ```sh
-npm install cuddle --save
+npm i cuddle@latest -S
 ```
 
-##Use Cases
+## Use Cases
 
-###Simple
+### Important notes
+- Status code < 200 or >= 300 will be classifed as an error.
+- Request will not fire unless `.then` or `.end` is called
+
+
+
+### Simple
 ```js
 const cudl = require('cuddle');
 
@@ -22,15 +28,17 @@ cudl.post
         sex: 'male'
     })
     .then((err, result) => {
+
         if (err) {
             //handle error
         }
+
         console.log(result);
     });
 ```
 
 
-###Promise:
+### Promise:
 ```js
 const cudl = require('cuddle');
 
@@ -47,7 +55,7 @@ cudl.post
 ```
 
 
-###Using with generators:
+### Using with generators:
 ```js
 const cudl = require('cuddle');
 const co = require('co');
@@ -64,14 +72,14 @@ function* foo () {
 co(foo);
 ```
 
-###Throttling requests
+### Throttling requests
 ```js
 // will only let 50 concurrent requests
 cudl.throttle(50);
 ```
 
 
-###Easy scoping through args:
+### Easy scoping through args:
 ```js
 const cudl = require('cuddle');
 
@@ -93,8 +101,7 @@ function foo () {
     });
 }
 
-function bar (err, result, request, args) {
-    const user = args[0];
+function bar (err, result, request, [user]) {
 
     if (err) {
         // cuddle will return a different error after reaching maximum retries
@@ -114,12 +121,3 @@ function bar (err, result, request, args) {
 foo();
 ```
 
-
-Status code < 200 or >= 300 will be classifed as an error.
-
-
-##Migrating from version <= 0.0.56
-1. No longer support logger in class constructor
-2. max_retry default to 0
-3. then/end must be called to start the request
-4. `add_header` is now `set_header`

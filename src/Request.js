@@ -1,22 +1,16 @@
 'use strict';
 
-import https    from 'https';
-import http     from 'http';
-import url      from 'url';
+import HttpError from './HttpError';
+import https from 'https';
+import http  from 'http';
+import url   from 'url';
 
 
 
 export default class Request {
 
     static get RETRYABLES () {
-        return this._retryables || [
-            'ECONNREFUSED',
-            'ECONNRESET',
-            'ENOTFOUND',
-            'EADDRINFO',
-            'ETIMEDOUT',
-            'ESRCH'
-        ];
+        return this._retryables || HttpError.RETRYABLE_ERRORS;
     }
 
     static set RETRYABLES (retryables) {
