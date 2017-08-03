@@ -1,6 +1,6 @@
 'use strict';
 
-import cudl from './../index';
+import cudl from './../../index';
 import nock from 'nock';
 import url from 'url';
 

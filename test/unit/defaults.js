@@ -1,6 +1,6 @@
 'use strict';
 
-import cudl from './../index';
+import cudl from './../../index';
 
 
 describe('Defaults', () => {

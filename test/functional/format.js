@@ -1,7 +1,6 @@
 'use strict';
 
-import cudl from './../index';
-import should from 'should';
+import cudl from './../../index';
 import nock from 'nock';
 
 
