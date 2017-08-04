@@ -108,6 +108,7 @@ export default class Request {
         this.encoding       = 'utf8';
         this.logger         = console;
         this.errors         = [];
+        this.last_error     = null;
 
         this.end            = this.then;
     }
@@ -245,17 +246,24 @@ export default class Request {
 
     retry () {
 
-        if (this.retries++ < this._max_retry) {
-            this.log('warn', 'Retrying request');
+        if (this.last_error) {
+            this.errors.push(this.last_error);
+        }
+
+        if (++this.retries < this._max_retry) {
+
+            this.log('warn', 'Retrying request', this.retries, this.errors);
+
             return this.then(this._final_cb);
         }
 
+        const last_error = this.errors.pop();
+
+        last_error.max_retry_reached = true;
+        last_error.errors = this.errors;
+
         this.cb(
-            {
-                message: 'Reached max retries',
-                errors: this.errors,
-                url: this.uri
-            },
+            last_error,
             null,
             this,
             this.additional_arguments
@@ -361,13 +369,13 @@ export default class Request {
 
         response.on('close', () => {
             this.log('error', 'Response closed');
-            this.errors.push('Response closed');
+            this.last_error = 'Response closed';
             this.retry();
         });
 
         response.on('error', err => {
             this.log('error', 'Response error', err);
-            this.errors.push('Response closed');
+            this.last_error = err;
             this.retry();
         });
 
@@ -394,20 +402,32 @@ export default class Request {
                 this.raw = JSON.parse(this.raw);
             }
             catch (e) {
+                this.last_error = e;
                 this.log('error', 'JSON is invalid');
                 return this.cb(e, this.raw, this, this.additional_arguments);
             }
         }
 
-        // non-200 status codes
-        if (this.response.statusCode < 200 || this.response.statusCode >= 300) {
-            let error = {
+        if (this.response.statusCode >= 500) {
+
+            this.last_error = {
                 response: this.raw,
                 code: this.response.statusCode
             };
 
+            return this.retry();
+        }
 
-            return this.cb(error, null, this, this.additional_arguments);
+
+        // non-200 and non-500 status codes
+        if (this.response.statusCode < 200 || this.response.statusCode >= 300) {
+
+            this.last_error = {
+                response: this.raw,
+                code: this.response.statusCode
+            };
+
+            return this.cb(this.last_error, null, this, this.additional_arguments);
         }
 
 
@@ -459,7 +479,7 @@ export default class Request {
         this.log('error', 'Request error', err);
 
         if (~this._retryables.indexOf(err.code) && this.retries < this._max_retry) {
-            this.errors.push(err);
+            this.last_error = err;
             return this.retry();
         }
 
