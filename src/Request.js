@@ -251,8 +251,11 @@ export default class Request {
         }
 
         if (this.retries + 1 < this._max_retry) {
-            this.log('warn', 'Retrying request');
+
             this.retries++;
+
+            this.log('warn', 'Retrying request', this.retries, this.errors);
+
             return this.then(this._final_cb);
         }
 
@@ -368,13 +371,13 @@ export default class Request {
 
         response.on('close', () => {
             this.log('error', 'Response closed');
-            this.errors.push('Response closed');
+            this.last_error = 'Response closed';
             this.retry();
         });
 
         response.on('error', err => {
             this.log('error', 'Response error', err);
-            this.errors.push('Response closed');
+            this.last_error = err;
             this.retry();
         });
 
