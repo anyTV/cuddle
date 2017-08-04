@@ -250,9 +250,7 @@ export default class Request {
             this.errors.push(this.last_error);
         }
 
-        if (this.retries + 1 < this._max_retry) {
-
-            this.retries++;
+        if (++this.retries < this._max_retry) {
 
             this.log('warn', 'Retrying request', this.retries, this.errors);
 
