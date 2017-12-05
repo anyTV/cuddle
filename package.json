@@ -6,6 +6,7 @@
   "scripts": {
     "start": "grunt",
     "build": "grunt build",
+    "prepublish": "npm run build",
     "test": "make test"
   },
   "repository": {
