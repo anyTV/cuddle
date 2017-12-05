@@ -4,5 +4,5 @@ node_modules
 # editor garbage
 .idea
 
-# npm garbase
+# npm garbage
 package-lock.json
