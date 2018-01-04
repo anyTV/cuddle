@@ -16,7 +16,7 @@
 - [](https://freedom.myjetbrains.com/youtrack/issue/)
 
 ## Summary of changes
-<!-- 
+<!--
     Describe the change and why it was introduced. Ideally this will also be
     used as the commit message when we do squash merge.
 
@@ -41,6 +41,6 @@
 ## Testing
 <!--
     Include this if we need manual testing and not unit test. If the tests does
-    not reach 10 lines, add it here, else move it to a document and link it 
+    not reach 10 lines, add it here, else move it to a document and link it
     to this section.
 -->
