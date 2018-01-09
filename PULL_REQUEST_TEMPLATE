@@ -5,7 +5,7 @@
     If your pull request is not yet ready for reviewing*:
         [WIP] <ticket-id> <ticket-name>
 
-    If your pull request should ignored by the CI but is ready for reviewing*:
+    If your pull request should be ignored by the CI but is ready for reviewing*:
         [CI SKIP] <ticket-id> <ticket-name>
 
     *Note that the CI will ignore pull requests with either "[WIP]",
@@ -17,7 +17,7 @@
 
 ## Summary of changes
 <!--
-    Describe the change and why it was introduced. Ideally this will also be
+    Describe the change and why it was introduced. Ideally, this will also be
     used as the commit message when we do squash merge.
 
     This is better presented in paragraph form. Only use bullet form when
@@ -33,14 +33,13 @@
 - [ ] bugfix
 - [ ] new feature
 - [ ] breaking change
-- [ ] added unittests
+- [ ] added unit tests
 - [ ] changes introduced has been discussed and approved
 - [ ] requires manual testing
 - [ ] documentation has been updated
 
 ## Testing
 <!--
-    Include this if we need manual testing and not unit test. If the tests does
-    not reach 10 lines, add it here, else move it to a document and link it
-    to this section.
+    Include this if we need manual testing and not a unit test.
+    If the tests do not reach 10 lines, add it here, else move it to a document and link it to this section.
 -->
