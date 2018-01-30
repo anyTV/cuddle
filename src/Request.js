@@ -369,7 +369,10 @@ export default class Request {
 
         response.on('close', () => {
             this.log('error', 'Response closed');
-            this.last_error = 'Response closed';
+            this.last_error = {
+                response: 'Response closed',
+                code: 500
+            };
             this.retry();
         });
 
