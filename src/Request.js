@@ -50,6 +50,19 @@ export default class Request {
             .join('&');
     }
 
+    static format_payload (payload, content_type) {
+        if (typeof payload !== 'object') {
+            return payload;
+        }
+
+        switch (content_type) {
+            case 'application/x-www-form-urlencoded':
+                return Request.stringify(payload);
+            case 'application/json': default:
+                return JSON.stringify(payload);
+        }
+    }
+
     static throttle (n) {
         this._max_running = n;
     }
@@ -292,6 +305,14 @@ export default class Request {
 
         this.started = true;
 
+        // set headers
+        if (!this.headers.Accept) {
+            this.headers.Accept = 'application/json';
+        }
+
+        if (!this.headers['Content-Type']) {
+            this.headers['Content-Type'] = 'application/x-www-form-urlencoded';
+        }
 
 
         // form payload
@@ -307,22 +328,13 @@ export default class Request {
             }
         }
         else if (this.auto_format) {
-            payload = (!this.headers['Content-Type'] && this.data)
-                ? Request.stringify(this.data)
-                : JSON.stringify(this.data);
+            payload = Request.format_payload(
+                this.data,
+                this.headers['Content-Type']
+            );
         }
         else {
             payload = this.data;
-        }
-
-
-        // set headers
-        if (!this.headers.Accept) {
-            this.headers.Accept = 'application/json';
-        }
-
-        if (!this.headers['Content-Type']) {
-            this.headers['Content-Type'] = 'application/x-www-form-urlencoded';
         }
 
         if (payload) {
