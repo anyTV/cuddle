@@ -51,15 +51,14 @@ export default class Request {
     }
 
     static format_payload (payload, content_type) {
-        if (typeof payload !== 'object') {
-            return payload;
+        if (
+            typeof payload !== 'object'
+            || content_type === 'application/json'
+        ) {
+            return JSON.stringify(payload);
         }
-
-        switch (content_type) {
-            case 'application/json':
-                return JSON.stringify(payload);
-            case 'application/x-www-form-urlencoded': default:
-                return Request.stringify(payload);
+        else {
+            return Request.stringify(payload);
         }
     }
 
