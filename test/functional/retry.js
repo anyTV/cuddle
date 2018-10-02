@@ -87,13 +87,13 @@ describe('Retry request', () => {
 
         nock('http://localhost')
             .matchHeader('Content-Type', 'application/x-www-form-urlencoded')
-            .post('/', body)
+            .post('/', cudl.Request.stringify(body))
             .times(1)
             .reply(500);
 
         nock('http://localhost')
             .matchHeader('Content-Type', 'application/x-www-form-urlencoded')
-            .post('/', body)
+            .post('/', cudl.Request.stringify(body))
             .reply(200);
 
         cudl.post

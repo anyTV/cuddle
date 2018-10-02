@@ -56,10 +56,10 @@ export default class Request {
         }
 
         switch (content_type) {
-            case 'application/x-www-form-urlencoded':
-                return Request.stringify(payload);
-            case 'application/json': default:
+            case 'application/json':
                 return JSON.stringify(payload);
+            case 'application/x-www-form-urlencoded': default:
+                return Request.stringify(payload);
         }
     }
 
@@ -305,14 +305,6 @@ export default class Request {
 
         this.started = true;
 
-        // set headers
-        if (!this.headers.Accept) {
-            this.headers.Accept = 'application/json';
-        }
-
-        if (!this.headers['Content-Type']) {
-            this.headers['Content-Type'] = 'application/x-www-form-urlencoded';
-        }
 
 
         // form payload
@@ -335,6 +327,16 @@ export default class Request {
         }
         else {
             payload = this.data;
+        }
+
+
+        // set headers
+        if (!this.headers.Accept) {
+            this.headers.Accept = 'application/json';
+        }
+
+        if (!this.headers['Content-Type']) {
+            this.headers['Content-Type'] = 'application/x-www-form-urlencoded';
         }
 
         if (payload) {
