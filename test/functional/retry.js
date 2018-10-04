@@ -88,7 +88,6 @@ describe('Retry request', () => {
         nock('http://localhost')
             .matchHeader('Content-Type', 'application/x-www-form-urlencoded')
             .post('/', cudl.stringify(body))
-            .times(1)
             .reply(500);
 
         nock('http://localhost')
@@ -115,7 +114,6 @@ describe('Retry request', () => {
         nock('http://localhost')
             .matchHeader('Content-Type', 'application/json')
             .post('/', body)
-            .times(1)
             .reply(500);
 
         nock('http://localhost')

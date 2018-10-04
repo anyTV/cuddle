@@ -309,7 +309,20 @@ export default class Request {
         }
         else if (!this._formatted_payload) {
             if (this.auto_format) {
-                this._formatted_payload = (!this.headers['Content-Type'] && this.data)
+                /*
+                    Formatting cases:
+                    +------------------------------------------------+
+                    | content-type   | data           |    | format  |
+                    |----------------+----------------+----+---------|
+                    | urlencoded     | exists         | -> | Request |
+                    | urlencoded     | null/undefined | -> | JSON    |
+                    | json           | exists         | -> | JSON    |
+                    | json           | null/undefined | -> | JSON    |
+                    | null/undefined | exists         | -> | Request |
+                    | null/undefined | null/undefined | -> | JSON    |
+                    +------------------------------------------------+
+                */
+                this._formatted_payload = (this.headers['Content-Type'] !== 'application/json' && this.data)
                     ? Request.stringify(this.data)
                     : JSON.stringify(this.data);
             }
