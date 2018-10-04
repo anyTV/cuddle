@@ -92,23 +92,24 @@ export default class Request {
 
         method = method.toUpperCase();
 
-        this._max_retry     = Request.MAX_RETRY;
-        this._retryables    = Request.RETRYABLES;
+        this._max_retry         = Request.MAX_RETRY;
+        this._retryables        = Request.RETRYABLES;
+        this._formatted_payload = null;
 
-        this.method         = method;
-        this.data           = '';
-        this.headers        = {};
-        this.callbacks      = {};
-        this.request_opts   = {};
-        this.retries        = 0;
-        this.auto_format    = true;
-        this.secure         = false;
-        this.follow         = false;
-        this.started        = false;
-        this.encoding       = 'utf8';
-        this.logger         = console;
-        this.errors         = [];
-        this.last_error     = null;
+        this.method             = method;
+        this.data               = '';
+        this.headers            = {};
+        this.callbacks          = {};
+        this.request_opts       = {};
+        this.retries            = 0;
+        this.auto_format        = true;
+        this.secure             = false;
+        this.follow             = false;
+        this.started            = false;
+        this.encoding           = 'utf8';
+        this.logger             = console;
+        this.errors             = [];
+        this.last_error         = null;
 
         this.end            = this.then;
     }
@@ -279,6 +280,7 @@ export default class Request {
     }
 
     send (data) {
+        this._formatted_payload = null;
         this.data = data || '';
         return this;
     }
@@ -288,7 +290,6 @@ export default class Request {
 
         // do not override the this.path because of redirects or retries
         let new_path = this.path;
-        let payload = '';
 
         this.started = true;
 
@@ -306,13 +307,28 @@ export default class Request {
                 new_path += '?' + data;
             }
         }
-        else if (this.auto_format) {
-            payload = (!this.headers['Content-Type'] && this.data)
-                ? Request.stringify(this.data)
-                : JSON.stringify(this.data);
-        }
-        else {
-            payload = this.data;
+        else if (!this._formatted_payload) {
+            if (this.auto_format) {
+                /*
+                    Formatting cases:
+                    +------------------------------------------------+
+                    | content-type   | data           |    | format  |
+                    |----------------+----------------+----+---------|
+                    | urlencoded     | exists         | -> | Request |
+                    | urlencoded     | null/undefined | -> | JSON    |
+                    | json           | exists         | -> | JSON    |
+                    | json           | null/undefined | -> | JSON    |
+                    | null/undefined | exists         | -> | Request |
+                    | null/undefined | null/undefined | -> | JSON    |
+                    +------------------------------------------------+
+                */
+                this._formatted_payload = (this.headers['Content-Type'] !== 'application/json' && this.data)
+                    ? Request.stringify(this.data)
+                    : JSON.stringify(this.data);
+            }
+            else {
+                this._formatted_payload = this.data;
+            }
         }
 
 
@@ -325,8 +341,10 @@ export default class Request {
             this.headers['Content-Type'] = 'application/x-www-form-urlencoded';
         }
 
-        if (payload) {
-            this.headers['Content-Length'] = Buffer.byteLength(payload);
+        if (this._formatted_payload) {
+            this.headers['Content-Length'] = Buffer.byteLength(
+                this._formatted_payload
+            );
         }
 
 
@@ -348,7 +366,7 @@ export default class Request {
         // send payload
 
         if (this.method !== 'GET') {
-            req.write(payload);
+            req.write(this._formatted_payload);
         }
 
         // end the request

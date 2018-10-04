@@ -81,4 +81,56 @@ describe('Retry request', () => {
             });
     });
 
+
+    it ('should retry and correctly url-form-encode payload', done => {
+        const body = {sample_key: 'sample_value'};
+
+        nock('http://localhost')
+            .matchHeader('Content-Type', 'application/x-www-form-urlencoded')
+            .post('/', cudl.stringify(body))
+            .reply(500);
+
+        nock('http://localhost')
+            .matchHeader('Content-Type', 'application/x-www-form-urlencoded')
+            .post('/', cudl.stringify(body))
+            .reply(200);
+
+        cudl.post
+            .to('http://localhost')
+            .send(body)
+            .max_retry(2)
+            .then((err) => {
+
+                should(err).be.eql(null);
+
+                done();
+            });
+    });
+
+
+    it ('should retry and correctly send JSON string payload', done => {
+        const body = {sample_key: 'sample_value'};
+
+        nock('http://localhost')
+            .matchHeader('Content-Type', 'application/json')
+            .post('/', body)
+            .reply(500);
+
+        nock('http://localhost')
+            .matchHeader('Content-Type', 'application/json')
+            .post('/', body)
+            .reply(200);
+
+        cudl.post
+            .to('http://localhost')
+            .set_header('Content-Type', 'application/json')
+            .send(body)
+            .max_retry(2)
+            .then((err) => {
+
+                should(err).be.eql(null);
+
+                done();
+            });
+    });
 });
