@@ -50,18 +50,6 @@ export default class Request {
             .join('&');
     }
 
-    static format_payload (payload, content_type) {
-        if (
-            typeof payload !== 'object'
-            || content_type === 'application/json'
-        ) {
-            return JSON.stringify(payload);
-        }
-        else {
-            return Request.stringify(payload);
-        }
-    }
-
     static throttle (n) {
         this._max_running = n;
     }
@@ -321,13 +309,12 @@ export default class Request {
         }
         else if (!this._formatted_payload) {
             if (this.auto_format) {
-                this._formatted_payload = Request.format_payload(
-                    this.data,
-                    this.headers['Content-Type']
-                );
+                this._formatted_payload = (!this.headers['Content-Type'] && this.data)
+                    ? Request.stringify(this.data)
+                    : JSON.stringify(this.data);
             }
             else {
-                this._formatted_payload  = this.data;
+                this._formatted_payload = this.data;
             }
         }
 
