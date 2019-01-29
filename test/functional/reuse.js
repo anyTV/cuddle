@@ -1,4 +1,4 @@
-'use strict';
+
 
 import cudl from '../../index';
 import should from 'should';
@@ -30,9 +30,9 @@ describe('reuse', () => {
                 should(err).be.eql(null);
 
                 request.send(body_2)
-                    .then((err) => {
+                    .then((_err) => {
 
-                        should(err).be.eql(null);
+                        should(_err).be.eql(null);
 
                         done();
                     });

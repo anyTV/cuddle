@@ -1,4 +1,4 @@
-'use strict';
+
 
 import cudl from './../../index';
 import nock from 'nock';
@@ -94,7 +94,7 @@ describe('PUT JSON request', () => {
             .put('/')
             .reply(200, (uri, body) => body);
 
-    	const payload = {a:'sample', b:'sample2'};
+        const payload = {a: 'sample', b: 'sample2'};
 
         cudl.put
             .to('http://localhost')
@@ -104,7 +104,7 @@ describe('PUT JSON request', () => {
 
                 result.should.be.eql(payload);
 
-		        done();
+                done();
             });
 
     });

@@ -1,4 +1,4 @@
-'use strict';
+
 
 import Request from './Request';
 
@@ -19,7 +19,7 @@ export default class Cuddle {
 
     static get post () {
         return new Request('POST');
-   }
+    }
 
     static get put () {
         return new Request('PUT');
