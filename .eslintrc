@@ -1,0 +1,137 @@
+{
+  "extends": "eslint:recommended",
+  "plugins": [
+    "json"
+  ],
+  "parserOptions": {
+    "ecmaVersion": 2017,
+    "sourceType": "module",
+    "impliedStrict": true
+  },
+  "env": {
+    "es6": true,
+    "jasmine": true,
+    "node": true,
+    "mocha": true,
+    "browser": true,
+    "builtin": true
+  },
+  "globals": {},
+  "rules": {
+    "block-scoped-var": "error",
+    "comma-style": [
+      "error",
+      "last"
+    ],
+    "comma-dangle": [
+      "warn",
+      "only-multiline"
+    ],
+    "curly": [
+      "error",
+      "all"
+    ],
+    "dot-notation": [
+      "error",
+      {
+        "allowKeywords": true
+      }
+    ],
+    "eqeqeq": [
+      "error",
+      "smart"
+    ],
+    "guard-for-in": "error",
+    "indent": [
+      "error",
+      4,
+      {
+        "MemberExpression": 1,
+        "CallExpression": {
+          "arguments": 1
+        },
+        "ignoredNodes": [
+          ":first-child"
+        ],
+        "SwitchCase": 1
+      }
+    ],
+    "linebreak-style": [
+      "error",
+      "unix"
+    ],
+    "max-depth": [
+      "error",
+      4
+    ],
+    "max-len": [
+      "error",
+      {
+        "code": 120,
+        "ignoreComments": true
+      }
+    ],
+    "newline-per-chained-call": [
+      "error",
+      {
+        "ignoreChainWithDepth": 3
+      }
+    ],
+    "no-caller": "error",
+    "no-case-declarations": "error",
+    "no-cond-assign": [
+      "error",
+      "except-parens"
+    ],
+    "no-console": "warn",
+    "no-debugger": "error",
+    "no-else-return": "error",
+    "no-empty": "error",
+    "no-eval": "error",
+    "no-extend-native": "error",
+    "no-irregular-whitespace": "error",
+    "no-iterator": "error",
+    "no-loop-func": "error",
+    "no-multi-str": "error",
+    "no-new": "error",
+    "no-proto": "error",
+    "no-script-url": "error",
+    "no-sequences": "error",
+    "no-shadow": "error",
+    "no-sparse-arrays": "error",
+    "no-undef": "error",
+    "no-unused-vars": "error",
+    "no-useless-escape": "warn",
+    "no-use-before-define": [
+      "warn",
+      "nofunc"
+    ],
+    "no-with": "error",
+    "padding-line-between-statements": [
+      "error",
+      {
+        "blankLine": "always",
+        "prev": "*",
+        "next": "return"
+      }
+    ],
+    "quotes": [
+      "error",
+      "single",
+      {
+        "avoidEscape": true,
+        "allowTemplateLiterals": true
+      }
+    ],
+    "semi": "error",
+    "strict": [
+      "error",
+      "global"
+    ],
+    "valid-typeof": "error",
+    "wrap-iife": [
+      "error",
+      "inside"
+    ]
+  }
+}

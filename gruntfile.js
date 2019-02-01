@@ -1,17 +1,17 @@
-'use strict';
+
 
 
 module.exports = (grunt) => {
 
     grunt.initConfig({
-        jshint: {
-            files: [
+        eslint: {
+            src: [
                 'gruntfile.js',
                 'src/**/*.js',
                 'test/**/*.js'
             ],
             options: {
-                jshintrc: '.jshintrc'
+                configFile: '.eslintrc'
             }
         },
 
@@ -28,8 +28,8 @@ module.exports = (grunt) => {
 
         watch: {
           rollup: {
-            files: ['<%= jshint.files %>'],
-            tasks: ['jshint', 'rollup'],
+            files: ['<%= eslint.src %>'],
+            tasks: ['eslint', 'rollup'],
             options: {
                 spawn: false
             }
@@ -37,13 +37,13 @@ module.exports = (grunt) => {
         }
     });
 
-    grunt.loadNpmTasks('grunt-contrib-jshint');
+    grunt.loadNpmTasks('gruntify-eslint');
     grunt.loadNpmTasks('grunt-contrib-watch');
     grunt.loadNpmTasks('grunt-rollup');
 
-    grunt.registerTask('test', ['jshint']);
-    grunt.registerTask('test-watch', ['jshint', 'watch']);
-    grunt.registerTask('build', ['rollup']);
-    grunt.registerTask('default', ['jshint', 'rollup', 'watch']);
+    grunt.registerTask('test', ['eslint']);
+    grunt.registerTask('test-watch', ['eslint', 'watch']);
+    grunt.registerTask('build', ['eslint', 'rollup']);
+    grunt.registerTask('default', ['eslint', 'rollup', 'watch']);
 
 };
