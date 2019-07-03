@@ -96,9 +96,9 @@ function foo () {
         cudl.get
             .to('http://localhost:8082/api/user/' + user.id)
             .args(user)
-            //.max_retry(10)    // default is 3
-            //.debug()          // if you want to log all
-            //.logger(winston)  // if you want to replace the logger (console)
+            //.max_retry(10)    // to set the number of retries
+            //.debug()          // to log all
+            //.logger(winston)  // to replace the logger (default is console)
             .then(bar);
     });
 }
