@@ -98,13 +98,11 @@ export default class Request {
         this.method         = method;
         this.data           = '';
         this.headers        = {};
-        this.callbacks      = {};
         this.request_opts   = {};
         this.retries        = 0;
         this.auto_format    = true;
         this.secure         = false;
         this.follow         = false;
-        this.started        = false;
         this.encoding       = 'utf8';
         this.logger         = console;
         this.errors         = [];
@@ -366,12 +364,6 @@ export default class Request {
         response.setEncoding(this.encoding);
 
         response.on('data', chunk => this.raw += chunk);
-
-        response.on('close', () => {
-            this.log('error', 'Response closed');
-            this.last_error = 'Response closed';
-            this.retry();
-        });
 
         response.on('error', err => {
             this.log('error', 'Response error', err);
