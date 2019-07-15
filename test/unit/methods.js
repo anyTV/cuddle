@@ -1,4 +1,4 @@
-'use strict';
+
 
 import cudl from './../../index';
 import nock from 'nock';

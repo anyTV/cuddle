@@ -1,3 +1,10 @@
+v1.3.2
+----
+
+* HD-104416 Cuddle > master script error on max_retry_reached (#17)
+  * Assign error object to last_error when response was closed
+
+
 v1.3.0
 ----
 

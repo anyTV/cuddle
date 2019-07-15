@@ -1,4 +1,4 @@
-'use strict';
+
 
 import HttpError from './HttpError';
 import https from 'https';
@@ -67,6 +67,7 @@ export default class Request {
 
         if (this._running < this._max_running) {
             this._running++;
+
             return req.start();
         }
 
@@ -81,6 +82,7 @@ export default class Request {
 
         if (this._requests_queue.length) {
             const req = this._requests_queue.shift();
+
             return req.start();
         }
 
@@ -92,21 +94,22 @@ export default class Request {
 
         method = method.toUpperCase();
 
-        this._max_retry     = Request.MAX_RETRY;
-        this._retryables    = Request.RETRYABLES;
+        this._max_retry         = Request.MAX_RETRY;
+        this._retryables        = Request.RETRYABLES;
+        this._formatted_payload = null;
 
-        this.method         = method;
-        this.data           = '';
-        this.headers        = {};
-        this.request_opts   = {};
-        this.retries        = 0;
-        this.auto_format    = true;
-        this.secure         = false;
-        this.follow         = false;
-        this.encoding       = 'utf8';
-        this.logger         = console;
-        this.errors         = [];
-        this.last_error     = null;
+        this.method             = method;
+        this.data               = '';
+        this.headers            = {};
+        this.request_opts       = {};
+        this.retries            = 0;
+        this.auto_format        = true;
+        this.secure             = false;
+        this.follow             = false;
+        this.encoding           = 'utf8';
+        this.logger             = console;
+        this.errors             = [];
+        this.last_error         = null;
 
         this.end            = this.then;
     }
@@ -152,12 +155,14 @@ export default class Request {
 
     max_retry (max) {
         this._max_retry = max;
+
         return this;
     }
 
 
     set_retryables (retryables) {
         this._retryables = retryables;
+
         return this;
     }
 
@@ -165,18 +170,21 @@ export default class Request {
     add_header (key, value) {
         console.error(`Cuddle's add_header will be deprecated. Use set_header instead.`);
         this.headers[key] = value;
+
         return this;
     }
 
 
     set_header (key, value) {
         this.headers[key] = value;
+
         return this;
     }
 
 
     set_opts (key, value) {
         this.request_opts[key] = value;
+
         return this;
     }
 
@@ -205,32 +213,38 @@ export default class Request {
 
     args () {
         this.additional_arguments = arguments;
+
         return this;
     }
 
     set_encoding (encoding) {
         this.encoding = encoding;
+
         return this;
     }
 
     follow_redirects (max_redirects) {
         this.max_redirects = max_redirects || 3;
         this.follow = true;
+
         return this;
     }
 
     format_payload (fmt) {
         this.auto_format = fmt;
+
         return this;
     }
 
     logger (logger) {
         this.logger = logger;
+
         return this;
     }
 
     debug () {
         this.is_verbose = true;
+
         return this;
     }
 
@@ -277,7 +291,9 @@ export default class Request {
     }
 
     send (data) {
+        this._formatted_payload = null;
         this.data = data || '';
+
         return this;
     }
 
@@ -286,7 +302,6 @@ export default class Request {
 
         // do not override the this.path because of redirects or retries
         let new_path = this.path;
-        let payload = '';
 
         this.started = true;
 
@@ -304,13 +319,28 @@ export default class Request {
                 new_path += '?' + data;
             }
         }
-        else if (this.auto_format) {
-            payload = (!this.headers['Content-Type'] && this.data)
-                ? Request.stringify(this.data)
-                : JSON.stringify(this.data);
-        }
-        else {
-            payload = this.data;
+        else if (!this._formatted_payload) {
+            if (this.auto_format) {
+                /*
+                    Formatting cases:
+                    +------------------------------------------------+
+                    | content-type   | data           |    | format  |
+                    |----------------+----------------+----+---------|
+                    | urlencoded     | exists         | -> | Request |
+                    | urlencoded     | null/undefined | -> | JSON    |
+                    | json           | exists         | -> | JSON    |
+                    | json           | null/undefined | -> | JSON    |
+                    | null/undefined | exists         | -> | Request |
+                    | null/undefined | null/undefined | -> | JSON    |
+                    +------------------------------------------------+
+                */
+                this._formatted_payload = (this.headers['Content-Type'] !== 'application/json' && this.data)
+                    ? Request.stringify(this.data)
+                    : JSON.stringify(this.data);
+            }
+            else {
+                this._formatted_payload = this.data;
+            }
         }
 
 
@@ -323,8 +353,10 @@ export default class Request {
             this.headers['Content-Type'] = 'application/x-www-form-urlencoded';
         }
 
-        if (payload) {
-            this.headers['Content-Length'] = Buffer.byteLength(payload);
+        if (this._formatted_payload) {
+            this.headers['Content-Length'] = Buffer.byteLength(
+                this._formatted_payload
+            );
         }
 
 
@@ -346,7 +378,7 @@ export default class Request {
         // send payload
 
         if (this.method !== 'GET') {
-            req.write(payload);
+            req.write(this._formatted_payload);
         }
 
         // end the request
@@ -396,6 +428,7 @@ export default class Request {
             catch (e) {
                 this.last_error = e;
                 this.log('error', 'JSON is invalid');
+
                 return this.cb(e, this.raw, this, this.additional_arguments);
             }
         }
@@ -445,7 +478,9 @@ export default class Request {
         }
 
         for (temp in this.headers) {
-            redir.set_header(temp, this.headers[temp]);
+            if (this.headers.hasOwnProperty(temp)) {
+                redir.set_header(temp, this.headers[temp]);
+            }
         }
 
         redir.set_encoding(this.encoding);
@@ -472,6 +507,7 @@ export default class Request {
 
         if (~this._retryables.indexOf(err.code) && this.retries < this._max_retry) {
             this.last_error = err;
+
             return this.retry();
         }
 
